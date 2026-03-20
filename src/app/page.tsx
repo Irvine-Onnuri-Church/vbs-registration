@@ -1,83 +1,67 @@
 import Link from 'next/link';
 
 import PageContainer from '@/components/PageContainer';
-import SectionTitle from '@/components/SectionTitle';
-import { EVENT_DETAILS, EVENT_INFO } from '@/lib/constants';
+import { EVENT_INFO } from '@/lib/constants';
 
 export default function HomePage() {
   return (
-    <PageContainer className="space-y-10">
-      <section className="rounded-3xl bg-white px-6 py-10 shadow-sm ring-1 ring-slate-200 sm:px-10">
-        <div className="max-w-3xl space-y-5">
-          <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-700">
-            Welcome families
-          </span>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            {EVENT_INFO.name}
-          </h1>
-          <p className="text-base leading-7 text-slate-600 sm:text-lg">
-            A simple starting point for a church Vacation Bible School registration experience. Full forms,
-            payments, and email updates will be connected in future steps.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
-            >
-              Start Registration
-            </Link>
-            <a
-              href={EVENT_INFO.parentGuidePdfPath}
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-            >
-              Download Parent Guide PDF
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
-          <SectionTitle
-            title="Event Details"
-            description="Replace these placeholders with your final VBS schedule, location, and attendance details."
-          />
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {EVENT_DETAILS.map((detail) => (
-              <div key={detail.label} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p className="text-sm font-medium text-slate-500">{detail.label}</p>
-                <p className="mt-2 text-base font-semibold text-slate-900">{detail.value}</p>
-              </div>
-            ))}
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <p className="text-sm font-medium text-slate-500">Registration Fee</p>
-              <p className="mt-2 text-base font-semibold text-slate-900">{EVENT_INFO.registrationFee}</p>
+    <PageContainer className="max-w-4xl space-y-10 py-12 sm:space-y-14 sm:py-16">
+      <section className="space-y-6 text-center">
+        <div className="overflow-hidden rounded-[2rem] bg-white p-4 shadow-lg shadow-sky-100 ring-1 ring-sky-100 sm:p-6">
+          <div className="flex min-h-[260px] items-end justify-center rounded-[1.5rem] bg-gradient-to-br from-yellow-200 via-sky-200 to-white px-6 py-10 text-center shadow-inner sm:min-h-[340px]">
+            <div className="max-w-2xl rounded-[1.5rem] bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Summer at church</p>
+              <h1 className="mt-3 text-4xl font-bold tracking-tight text-sky-950 sm:text-5xl">VBS 2025</h1>
+              <p className="mt-3 text-xl font-medium text-yellow-700">Bright Summer Camp</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
-          <SectionTitle
-            title="Parent Guide"
-            description="Share arrival details, policies, and volunteer information once the PDF is ready."
-            action={
-              <a
-                href={EVENT_INFO.parentGuidePdfPath}
-                className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-              >
-                View PDF
-              </a>
-            }
-          />
-          <div className="mt-6 space-y-4 text-sm leading-6 text-slate-200">
-            <p>Use this section to highlight what parents should know before registration opens.</p>
-            <ul className="space-y-2">
-              <li>• Check-in and pick-up process placeholder</li>
-              <li>• Allergy and medical policy placeholder</li>
-              <li>• Volunteer and contact information placeholder</li>
-            </ul>
-          </div>
+        <div className="mx-auto max-w-2xl space-y-4">
+          <p className="text-base leading-7 text-slate-700 sm:text-lg">{EVENT_INFO.shortDescription}</p>
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center rounded-full bg-yellow-400 px-6 py-3 text-base font-semibold text-sky-950 shadow-md shadow-yellow-200 transition hover:bg-yellow-300"
+          >
+            Register Now
+          </Link>
         </div>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
+        <article className="rounded-[2rem] bg-white p-6 shadow-md shadow-sky-100 ring-1 ring-sky-100 sm:p-8">
+          <h2 className="text-2xl font-semibold text-sky-950">Parent Guide</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+            Get the latest family information, event reminders, and day-of details in one easy guide.
+          </p>
+          <a
+            href={EVENT_INFO.parentGuidePdfPath}
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600"
+          >
+            Download PDF
+          </a>
+        </article>
+
+        <article className="rounded-[2rem] bg-[#fffdf4] p-6 shadow-md shadow-yellow-100 ring-1 ring-yellow-100 sm:p-8">
+          <h2 className="text-2xl font-semibold text-sky-950">Event Info</h2>
+          <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700 sm:text-base">
+            <div>
+              <p className="font-semibold text-sky-700">Dates</p>
+              <p>{EVENT_INFO.dates}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-sky-700">Location</p>
+              <p>{EVENT_INFO.location}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-sky-700">About the Week</p>
+              <p>
+                Kids can look forward to worship, stories, crafts, games, and a bright summer atmosphere designed to
+                help them grow in faith and friendship.
+              </p>
+            </div>
+          </div>
+        </article>
       </section>
     </PageContainer>
   );

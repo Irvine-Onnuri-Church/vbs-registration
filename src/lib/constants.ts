@@ -1,15 +1,18 @@
 export const EVENT_INFO = {
   name: 'VBS Registration',
-  year: '2026',
-  dates: 'July 15-18, 2026',
+  year: '2025',
+  dates: 'July 21-24, 2025',
+  location: 'Grace Church Fellowship Hall',
+  shortDescription:
+    'Join us for a joyful week of Bible lessons, music, crafts, games, and summer fun for the whole family.',
   registrationFee: '$35 per child',
   registrationFeeAmount: 35,
   parentGuidePdfPath: '/docs/parent-guide.pdf',
 } as const;
 
 export const EVENT_DETAILS = [
-  { label: 'Location', value: 'Main Campus Fellowship Hall' },
-  { label: 'Time', value: '6:00 PM - 8:30 PM nightly' },
+  { label: 'Dates', value: EVENT_INFO.dates },
+  { label: 'Location', value: EVENT_INFO.location },
   { label: 'Ages', value: 'Children entering kindergarten through 5th grade' },
 ];
 
