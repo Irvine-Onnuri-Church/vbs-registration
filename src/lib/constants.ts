@@ -3,6 +3,7 @@ export const EVENT_INFO = {
   year: '2026',
   dates: 'July 15-18, 2026',
   registrationFee: '$35 per child',
+  registrationFeeAmount: 35,
   parentGuidePdfPath: '/docs/parent-guide.pdf',
 } as const;
 
