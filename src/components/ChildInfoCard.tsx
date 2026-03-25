@@ -1,4 +1,5 @@
 import SectionTitle from '@/components/SectionTitle';
+import { formatCurrency } from '@/lib/utils';
 
 type ChildInfo = {
   id: number;
@@ -17,6 +18,8 @@ type ChildInfo = {
 type ChildInfoCardProps = {
   child: ChildInfo;
   childNumber: number;
+  childPrice: number;
+  priceCategoryLabel: string;
   onChange: (childId: number, field: keyof ChildInfo, value: string) => void;
 };
 
@@ -26,13 +29,26 @@ const tshirtSizes = ['Select size', 'YS', 'YM', 'YL', 'YXL', 'AS', 'AM', 'AL'];
 
 export type { ChildInfo };
 
-export default function ChildInfoCard({ child, childNumber, onChange }: ChildInfoCardProps) {
+export default function ChildInfoCard({
+  child,
+  childNumber,
+  childPrice,
+  priceCategoryLabel,
+  onChange,
+}: ChildInfoCardProps) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
       <SectionTitle
         title={`Child Information ${childNumber}`}
         description="Add the details needed for attendance, classroom planning, and child safety."
+        action={
+          <div className="rounded-full bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-900 ring-1 ring-sky-200">
+            Price: {formatCurrency(childPrice)}
+          </div>
+        }
       />
+      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">Pricing group: {priceCategoryLabel}</p>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm font-medium text-slate-700">First Name</span>

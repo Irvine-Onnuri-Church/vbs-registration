@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import ChildInfoCard, { type ChildInfo } from '@/components/ChildInfoCard';
 import PageContainer from '@/components/PageContainer';
 import ParentInfoSection, { type ParentInfo } from '@/components/ParentInfoSection';
+import PayPalPaymentPlaceholder from '@/components/PayPalPaymentPlaceholder';
 import RegistrationSummary from '@/components/RegistrationSummary';
 import SectionTitle from '@/components/SectionTitle';
 import { EVENT_INFO } from '@/lib/constants';
+import { calculateChildPrice, formatDateLabel, getPricingTierFromGrade, isEarlyRegistration } from '@/lib/utils';
 
 const initialParentInfo: ParentInfo = {
   parentName: '',
@@ -39,8 +41,28 @@ export default function RegisterPage() {
   const [photoConsent, setPhotoConsent] = useState(false);
   const [liabilityAcknowledgment, setLiabilityAcknowledgment] = useState(false);
 
+  const earlyRegistration = isEarlyRegistration(new Date(), EVENT_INFO.earlyRegistrationDeadline);
+  const pricingPhaseLabel = earlyRegistration ? 'Early Registration' : 'Regular Registration';
+
+  const childPricing = useMemo(
+    () =>
+      children.map((child, index) => {
+        const price = calculateChildPrice(child.grade, earlyRegistration);
+        const pricingTierLabel = getPricingTierFromGrade(child.grade) === 'beginner' ? 'Beginner (Pre-K)' : 'Kinder / Elementary';
+        const childName = child.firstName || child.preferredName || `Child ${index + 1}`;
+
+        return {
+          id: child.id,
+          label: childName,
+          price,
+          pricingTierLabel,
+        };
+      }),
+    [children, earlyRegistration],
+  );
+
   const childCount = children.length;
-  const totalAmount = childCount * EVENT_INFO.registrationFeeAmount;
+  const totalAmount = childPricing.reduce((total, child) => total + child.price, 0);
 
   function handleParentInfoChange(field: keyof ParentInfo, value: string) {
     setParentInfo((currentValues) => ({
@@ -80,6 +102,17 @@ export default function RegisterPage() {
         </p>
       </section>
 
+      <section className="rounded-3xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-900 sm:p-6">
+        <h2 className="text-base font-semibold">Pricing Rules</h2>
+        <p className="mt-2">
+          Early pricing ends on <strong>{formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</strong>. Beginner (Pre-K)
+          is $40 early / $50 regular. Kinder and Elementary is $80 early / $100 regular.
+        </p>
+        <p className="mt-2">
+          Current pricing phase: <strong>{pricingPhaseLabel}</strong>
+        </p>
+      </section>
+
       <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="space-y-6">
           <ParentInfoSection values={parentInfo} onChange={handleParentInfoChange} />
@@ -90,6 +123,8 @@ export default function RegisterPage() {
                 key={child.id}
                 child={child}
                 childNumber={index + 1}
+                childPrice={childPricing[index]?.price ?? 0}
+                priceCategoryLabel={childPricing[index]?.pricingTierLabel ?? 'Kinder / Elementary'}
                 onChange={handleChildChange}
               />
             ))}
@@ -138,6 +173,8 @@ export default function RegisterPage() {
               Continue to Payment will remain frontend-only until PayPal checkout is integrated.
             </div>
 
+            <PayPalPaymentPlaceholder totalAmount={totalAmount} />
+
             <button
               type="submit"
               className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 sm:w-auto"
@@ -149,7 +186,8 @@ export default function RegisterPage() {
 
         <RegistrationSummary
           childCount={childCount}
-          feePerChild={EVENT_INFO.registrationFeeAmount}
+          pricingPhaseLabel={pricingPhaseLabel}
+          childPrices={childPricing}
           totalAmount={totalAmount}
         />
       </form>
