@@ -1,14 +1,17 @@
 export const EVENT_INFO = {
   name: 'VBS 2026',
   subtitle: 'Kingdom Quest',
+  scripture: 'John 8:12 — "I am the light of the world."',
   church: 'Irvine Onnuri Church',
   year: '2026',
   dates: 'June 10–13, 2026',
-  beginnerDates: 'June 12–13, 2026',
+  times: 'Wed–Fri 3:00–7:00 PM · Sat 9:00 AM–1:00 PM',
   location: 'Irvine Onnuri Church',
   address: '17200 Jamboree Rd, Irvine, CA 92614',
+  contactName: '이지나 전도사 (Deaconess Jina Lee)',
+  contactPhone: '(818) 312-2173',
   shortDescription:
-    'Join us for Kingdom Quest — a week of Bible lessons, worship, crafts, and games for the whole family at Irvine Onnuri Church.',
+    'Join us for Kingdom Quest — a week of Bible lessons, worship, crafts, and games at Irvine Onnuri Church.',
   registrationFee: '$35 per child',
   registrationFeeAmount: 35,
   parentGuidePdfPath: '/docs/parent-guide.pdf',
@@ -30,8 +33,9 @@ export const REGISTRATION_PRICING = {
 } as const;
 
 export const EVENT_DETAILS = [
-  { label: 'Regular VBS (K–6th)', value: EVENT_INFO.dates },
-  { label: 'Beginner VBS (Preschool)', value: EVENT_INFO.beginnerDates },
+  { label: 'Dates', value: EVENT_INFO.dates },
+  { label: 'Times', value: EVENT_INFO.times },
+  { label: 'Who', value: 'Kinder – 6th Grade' },
   { label: 'Location', value: `${EVENT_INFO.location} — ${EVENT_INFO.address}` },
 ];
 

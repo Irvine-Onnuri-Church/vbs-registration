@@ -10,7 +10,7 @@ import PayPalButton from '@/components/PayPalButton';
 import RegistrationSummary from '@/components/RegistrationSummary';
 import SectionTitle from '@/components/SectionTitle';
 import { EVENT_INFO } from '@/lib/constants';
-import { calculateChildPrice, formatDateLabel, getRegistrationPhase, getPricingTierFromGrade } from '@/lib/utils';
+import { calculateChildPrice, formatDateLabel, getRegistrationPhase } from '@/lib/utils';
 
 const initialParentInfo: ParentInfo = {
   parentName: '',
@@ -67,11 +67,7 @@ export default function RegisterPage() {
     () =>
       children.map((child, index) => {
         const price = calculateChildPrice(child.grade, earlyRegistration);
-        const pricingTierLabel = !child.grade
-          ? 'Select a grade'
-          : getPricingTierFromGrade(child.grade) === 'beginner'
-            ? 'Beginner (Preschool)'
-            : 'K–6th Grade';
+        const pricingTierLabel = !child.grade ? 'Select a grade' : 'K–6th Grade';
         const childName = child.firstName || child.preferredName || `Child ${index + 1}`;
 
         return {
@@ -180,12 +176,12 @@ export default function RegisterPage() {
           <div className={`rounded-2xl border p-3 ${registrationPhase === 'early' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
             <p className="font-semibold">Early Registration</p>
             <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
-            <p className="mt-1">Preschool: $40 &nbsp;|&nbsp; K–6th: $70</p>
+            <p className="mt-1">K–6th Grade: $70</p>
           </div>
           <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
             <p className="font-semibold">Regular Registration</p>
             <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
-            <p className="mt-1">Preschool: $50 &nbsp;|&nbsp; K–6th: $90</p>
+            <p className="mt-1">K–6th Grade: $90</p>
           </div>
         </div>
         {registrationOpen && (
