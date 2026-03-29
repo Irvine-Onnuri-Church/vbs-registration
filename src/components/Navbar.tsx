@@ -24,14 +24,6 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
-            <li>
-              <Link
-                href="/login"
-                className="inline-flex rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
-              >
-                Login
-              </Link>
-            </li>
           </ul>
         </nav>
       </div>

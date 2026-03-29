@@ -8,7 +8,7 @@ export const EVENT_INFO = {
   times: 'Wed–Fri 3:00–7:00 PM · Sat 9:00 AM–1:00 PM',
   location: 'Irvine Onnuri Church',
   address: '17200 Jamboree Rd, Irvine, CA 92614',
-  contactName: '이지나 전도사 (Deaconess Jina Lee)',
+  contactName: '이지나 전도사 ',
   contactPhone: '(818) 312-2173',
   shortDescription:
     'Join us for Kingdom Quest — a week of Bible lessons, worship, crafts, and games at Irvine Onnuri Church.',

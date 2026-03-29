@@ -161,7 +161,7 @@ export default function MyPage() {
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
             <p className="font-medium text-slate-700">Need to make changes?</p>
-            <p className="mt-1">Please contact <strong>이지나 전도사 (Deaconess Jina Lee)</strong> at (818) 312-2173.</p>
+            <p className="mt-1">Please contact <strong>이지나 전도사 </strong> at (818) 312-2173.</p>
           </div>
         </section>
       )}
