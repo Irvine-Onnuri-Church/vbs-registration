@@ -51,17 +51,15 @@ export default function RegisterPage() {
     EVENT_INFO.earlyRegistrationDeadline,
     EVENT_INFO.registrationDeadline,
   );
-  const earlyRegistration = registrationPhase === 'early';
-  const registrationOpen = registrationPhase === 'early' || registrationPhase === 'regular';
+  const earlyRegistration = registrationPhase === 'early' || registrationPhase === 'not_open';
+  const registrationOpen = registrationPhase !== 'closed';
 
   const pricingPhaseLabel =
-    registrationPhase === 'early'
+    registrationPhase === 'early' || registrationPhase === 'not_open'
       ? 'Early Registration'
       : registrationPhase === 'regular'
         ? 'Regular Registration'
-        : registrationPhase === 'not_open'
-          ? 'Registration Not Yet Open'
-          : 'Registration Closed';
+        : 'Registration Closed';
 
   const childPricing = useMemo(
     () =>
@@ -156,14 +154,6 @@ export default function RegisterPage() {
         Fields marked with <span className="text-red-500">*</span> are required.
       </p>
 
-      {registrationPhase === 'not_open' && (
-        <section className="rounded-3xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900 sm:p-6">
-          <h2 className="text-base font-semibold">Registration Not Yet Open</h2>
-          <p className="mt-2">
-            Early registration opens on <strong>{formatDateLabel(EVENT_INFO.earlyRegistrationStart)}</strong>. Check back then to complete your registration.
-          </p>
-        </section>
-      )}
 
       {registrationPhase === 'closed' && (
         <section className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:p-6">
@@ -180,12 +170,12 @@ export default function RegisterPage() {
           <div className={`rounded-2xl border p-3 ${registrationPhase === 'early' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
             <p className="font-semibold">Early Registration</p>
             <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
-            <p className="mt-1">K–6th Grade: $70</p>
+            <p className="mt-1">K–6th Grade: $70 · Pre-K: $40</p>
           </div>
           <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
             <p className="font-semibold">Regular Registration</p>
             <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
-            <p className="mt-1">K–6th Grade: $90</p>
+            <p className="mt-1">K–6th Grade: $90 · Pre-K: $50</p>
           </div>
         </div>
         {registrationOpen && (

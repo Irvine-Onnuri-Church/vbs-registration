@@ -15,7 +15,7 @@ export const EVENT_INFO = {
   registrationFee: '$35 per child',
   registrationFeeAmount: 35,
   parentGuidePdfPath: '/docs/parent-guide.pdf',
-  earlyRegistrationStart: '2026-03-01',
+  earlyRegistrationStart: '2026-04-05',
   earlyRegistrationDeadline: '2026-05-03',
   regularRegistrationStart: '2026-05-04',
   registrationDeadline: '2026-05-31',

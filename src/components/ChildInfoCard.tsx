@@ -25,7 +25,7 @@ type ChildInfoCardProps = {
 };
 
 const genderOptions = ['Select gender', 'Female', 'Male'];
-const gradeOptions = ['Select grade', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
+const gradeOptions = ['Select grade', 'Pre-K', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 const tshirtSizes = [
   { value: '', label: 'Select size' },
   { value: 'YS', label: 'YS – Youth Small' },
