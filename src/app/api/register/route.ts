@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: 'VBS 2026 <onboarding@resend.dev>', // TODO: replace with your verified domain email
+        from: 'VBS 2026 <noreply@iocvbs.life>',
         to: parentInfo.email,
         subject: `VBS 2026 Registration Confirmed — ${parentInfo.parentName}`,
         html: buildConfirmationEmail(

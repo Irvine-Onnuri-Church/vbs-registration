@@ -75,15 +75,16 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Memory verse — full width card */}
-        <section className="overflow-hidden rounded-3xl shadow-xl">
-          <Image
-            src="/memory-verse.jpg"
-            alt="John 8:12 — I am the light of the world"
-            width={1920}
-            height={1080}
-            className="w-full object-cover"
-          />
+        {/* Memory verse */}
+        <section className="relative overflow-hidden rounded-3xl bg-[#0f1e5e] px-8 py-14 text-center shadow-xl sm:px-16">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-orange-400">Memory Verse</p>
+          <blockquote
+            className="mx-auto mt-5 max-w-3xl text-2xl leading-relaxed text-white sm:text-3xl"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Jesus spoke to the people again. He said, &ldquo;I am the light of the world. Anyone who follows me will never walk in darkness. They will have that light. They will have life.&rdquo;
+          </blockquote>
+          <p className="mt-5 text-sm font-bold tracking-widest text-orange-300">— JOHN 8:12</p>
         </section>
 
         {/* CTA */}
@@ -100,12 +101,12 @@ export default function HomePage() {
         </section>
 
         {/* Contact */}
-        <section className="rounded-3xl bg-[#0f1e5e] px-8 py-10 text-center text-white shadow-xl">
-          <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Questions?</p>
-          <p className="mt-2 text-xl font-semibold">{EVENT_INFO.contactName}</p>
+        <section className="rounded-3xl bg-white px-8 py-10 text-center shadow-xl ring-1 ring-slate-200">
+          <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Questions?</p>
+          <p className="mt-2 text-xl font-semibold text-slate-900">{EVENT_INFO.contactName}</p>
           <a
             href={`tel:${EVENT_INFO.contactPhone.replace(/\D/g, '')}`}
-            className="mt-1 block text-2xl font-bold text-orange-400 transition hover:text-orange-300"
+            className="mt-1 block text-2xl font-bold text-orange-500 transition hover:text-orange-400"
           >
             {EVENT_INFO.contactPhone}
           </a>

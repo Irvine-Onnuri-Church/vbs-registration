@@ -24,7 +24,7 @@ type ChildInfoCardProps = {
   onRemove?: () => void;
 };
 
-const genderOptions = ['Select gender', 'Female', 'Male', 'Prefer not to say'];
+const genderOptions = ['Select gender', 'Female', 'Male'];
 const gradeOptions = ['Select grade', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 const tshirtSizes = [
   { value: '', label: 'Select size' },
