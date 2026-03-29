@@ -41,6 +41,5 @@ export const EVENT_DETAILS = [
 
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/register', label: 'Register' },
   { href: '/mypage', label: 'My Page' },
 ];

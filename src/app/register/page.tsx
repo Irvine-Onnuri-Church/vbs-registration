@@ -143,14 +143,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <PageContainer className="space-y-8">
-      <section className="space-y-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Register</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">VBS Registration Form</h1>
-        <p className="max-w-3xl text-base leading-7 text-slate-600">
-          Complete the form below to register your child(ren) for VBS 2026. Fields marked with <span className="text-red-500">*</span> are required.
-        </p>
-      </section>
+    <div>
+      {/* Page header banner */}
+      <div className="bg-[#0f1e5e] px-6 py-10 text-center text-white">
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Irvine Onnuri Church</p>
+        <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">🏰 VBS Registration</h1>
+        <p className="mt-2 text-blue-200">Kingdom Quest · {EVENT_INFO.dates}</p>
+      </div>
+
+    <PageContainer className="space-y-8 pt-8">
+      <p className="text-sm text-slate-500">
+        Fields marked with <span className="text-red-500">*</span> are required.
+      </p>
 
       {registrationPhase === 'not_open' && (
         <section className="rounded-3xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900 sm:p-6">
@@ -284,5 +288,6 @@ export default function RegisterPage() {
         />
       </div>
     </PageContainer>
+    </div>
   );
 }

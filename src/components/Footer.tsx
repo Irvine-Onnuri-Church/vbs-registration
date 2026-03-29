@@ -2,13 +2,12 @@ import { EVENT_INFO } from '@/lib/constants';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p className="font-medium text-slate-700">
-          {EVENT_INFO.name} &mdash; {EVENT_INFO.church}
-        </p>
-        <p>{EVENT_INFO.address}</p>
-      </div>
+    <footer className="bg-[#080f2e] py-6 text-center text-sm text-blue-400">
+      <p className="font-semibold text-white">
+        {EVENT_INFO.name} — {EVENT_INFO.subtitle}
+      </p>
+      <p className="mt-1">{EVENT_INFO.church} · {EVENT_INFO.address}</p>
+      <p className="mt-1 text-blue-500">© 2026 {EVENT_INFO.church}</p>
     </footer>
   );
 }

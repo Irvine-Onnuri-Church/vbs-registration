@@ -6,8 +6,8 @@ import Navbar from '@/components/Navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VBS Registration',
-  description: 'Starter structure for a church VBS registration application.',
+  title: 'Irvine Onnuri VBS 2026',
+  description: 'Kingdom Quest — VBS 2026 at Irvine Onnuri Church. June 10–13, 2026.',
 };
 
 export default function RootLayout({

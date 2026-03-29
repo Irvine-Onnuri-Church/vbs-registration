@@ -1,82 +1,117 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import PageContainer from '@/components/PageContainer';
 import { EVENT_INFO } from '@/lib/constants';
 
 export default function HomePage() {
   return (
-    <PageContainer className="max-w-4xl space-y-10 py-12 sm:space-y-14 sm:py-16">
-      <section className="space-y-6 text-center">
-        <div className="overflow-hidden rounded-[2rem] shadow-lg shadow-sky-100 ring-1 ring-sky-100">
+    <div className="relative min-h-screen">
+
+      {/* ── Faded Kingdom Quest background ── */}
+      <div className="absolute inset-0 overflow-hidden">
+        <Image
+          src="/logo-theme.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-[0.12]"
+          priority
+        />
+        {/* White wash so content stays readable */}
+        <div className="absolute inset-0 bg-white/70" />
+      </div>
+
+      {/* ── All content on top ── */}
+      <div className="relative z-10 mx-auto max-w-5xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
+
+        {/* Banner */}
+        <section className="flex justify-center">
           <Image
             src="/banner.png"
-            alt="VBS 2026 Kingdom Quest"
-            width={1200}
-            height={500}
-            className="w-full object-cover"
+            alt="VBS 2026 Kingdom Quest — June 10–13"
+            width={800}
+            height={200}
+            className="w-full rounded-3xl shadow-2xl"
             priority
           />
-        </div>
+        </section>
 
-        <div className="mx-auto max-w-2xl space-y-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Irvine Onnuri Church</p>
-          <h1 className="text-4xl font-bold tracking-tight text-sky-950 sm:text-5xl">VBS 2026</h1>
-          <p className="text-xl font-medium text-yellow-700">Kingdom Quest</p>
-          <p className="pt-1 text-sm italic text-slate-500">{EVENT_INFO.scripture}</p>
-        </div>
+        {/* Event details */}
+        <section className="rounded-3xl bg-[#0f1e5e] p-8 text-white shadow-xl">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Dates', value: EVENT_INFO.dates },
+              { label: 'Times', value: EVENT_INFO.times },
+              { label: 'Who', value: 'Kinder – 6th Grade' },
+              { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-xs font-bold uppercase tracking-widest text-orange-400">{item.label}</p>
+                <p className="mt-1 font-semibold leading-snug text-white">{item.value}</p>
+                {item.sub && <p className="mt-0.5 text-sm text-blue-300">{item.sub}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <div className="mx-auto max-w-2xl space-y-4">
-          <p className="text-base leading-7 text-slate-700 sm:text-lg">{EVENT_INFO.shortDescription}</p>
+        {/* Image grid — bottom line + basic truth */}
+        <section className="grid gap-6 md:grid-cols-2">
+          <div className="overflow-hidden rounded-3xl shadow-xl">
+            <Image
+              src="/bottom-line.jpg"
+              alt="I will follow Jesus"
+              width={960}
+              height={540}
+              className="w-full object-cover"
+            />
+          </div>
+          <div className="overflow-hidden rounded-3xl shadow-xl">
+            <Image
+              src="/basic-truth.jpg"
+              alt="Jesus wants to be my friend forever"
+              width={960}
+              height={540}
+              className="w-full object-cover"
+            />
+          </div>
+        </section>
+
+        {/* Memory verse — full width card */}
+        <section className="overflow-hidden rounded-3xl shadow-xl">
+          <Image
+            src="/memory-verse.jpg"
+            alt="John 8:12 — I am the light of the world"
+            width={1920}
+            height={1080}
+            className="w-full object-cover"
+          />
+        </section>
+
+        {/* CTA */}
+        <section className="rounded-3xl bg-orange-500 px-8 py-12 text-center text-white shadow-xl">
+          <p className="text-sm font-bold uppercase tracking-widest text-orange-100">Don&apos;t miss out</p>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Ready to Join the Quest?</h2>
+          <p className="mt-3 text-base text-orange-100">{EVENT_INFO.dates} · {EVENT_INFO.location}</p>
           <Link
             href="/register"
-            className="inline-flex items-center justify-center rounded-full bg-yellow-400 px-6 py-3 text-base font-semibold text-sky-950 shadow-md shadow-yellow-200 transition hover:bg-yellow-300"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-base font-bold text-orange-600 shadow-lg transition hover:scale-105 hover:bg-orange-50"
           >
-            Register Now
+            Register Now →
           </Link>
-        </div>
-      </section>
+        </section>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <article className="rounded-[2rem] bg-[#fffdf4] p-6 shadow-md shadow-yellow-100 ring-1 ring-yellow-100 sm:p-8">
-          <h2 className="text-2xl font-semibold text-sky-950">Event Info</h2>
-          <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700 sm:text-base">
-            <div>
-              <p className="font-semibold text-sky-700">Dates</p>
-              <p>{EVENT_INFO.dates}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-sky-700">Times</p>
-              <p>{EVENT_INFO.times}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-sky-700">Who</p>
-              <p>Kinder – 6th Grade</p>
-            </div>
-            <div>
-              <p className="font-semibold text-sky-700">Location</p>
-              <p>{EVENT_INFO.location}</p>
-              <p className="text-slate-500">{EVENT_INFO.address}</p>
-            </div>
-          </div>
-        </article>
+        {/* Contact */}
+        <section className="rounded-3xl bg-[#0f1e5e] px-8 py-10 text-center text-white shadow-xl">
+          <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Questions?</p>
+          <p className="mt-2 text-xl font-semibold">{EVENT_INFO.contactName}</p>
+          <a
+            href={`tel:${EVENT_INFO.contactPhone.replace(/\D/g, '')}`}
+            className="mt-1 block text-2xl font-bold text-orange-400 transition hover:text-orange-300"
+          >
+            {EVENT_INFO.contactPhone}
+          </a>
+        </section>
 
-        <article className="rounded-[2rem] bg-white p-6 shadow-md shadow-sky-100 ring-1 ring-sky-100 sm:p-8">
-          <h2 className="text-2xl font-semibold text-sky-950">Contact</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-            Have questions about registration? Feel free to reach out.
-          </p>
-          <div className="mt-5 space-y-2 text-sm text-slate-700 sm:text-base">
-            <p className="font-semibold text-sky-700">{EVENT_INFO.contactName}</p>
-            <a
-              href={`tel:${EVENT_INFO.contactPhone.replace(/\D/g, '')}`}
-              className="block text-sky-600 transition hover:text-sky-800"
-            >
-              {EVENT_INFO.contactPhone}
-            </a>
-          </div>
-        </article>
-      </section>
-    </PageContainer>
+      </div>
+    </div>
   );
 }
