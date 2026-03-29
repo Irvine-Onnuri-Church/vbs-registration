@@ -117,12 +117,11 @@ export default function HomePage() {
       {/* Floating Register button */}
       <Link
         href="/register"
-        className="fixed bottom-8 right-6 z-50 flex flex-col items-center justify-center rounded-full bg-orange-500 px-6 py-4 text-center shadow-2xl shadow-orange-500/40 transition hover:scale-110 hover:bg-orange-400 active:scale-95"
-        style={{ minWidth: '7rem' }}
+        className="fixed bottom-8 right-6 z-50 flex h-20 w-20 flex-col items-center justify-center rounded-full bg-orange-500 text-center shadow-2xl shadow-orange-500/40 transition hover:scale-110 hover:bg-orange-400 active:scale-95"
       >
-        <span className="text-lg">🏰</span>
+        <span className="text-xl">🏰</span>
         <span
-          className="mt-0.5 text-sm font-black leading-tight text-white"
+          className="mt-0.5 text-[10px] font-black leading-tight text-white"
           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
         >
           Register<br />Now!
