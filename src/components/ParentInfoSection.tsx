@@ -55,18 +55,21 @@ export default function ParentInfoSection({ values, onChange }: ParentInfoSectio
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
       <SectionTitle
-        title="Parent Information"
-        description="Collect the main family contact details for registration and communication."
+        title="Parent / Guardian Information"
+        description="Provide the main family contact details for registration and communication."
       />
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {parentFields.map((field) => (
           <label key={field.field} className="space-y-2">
-            <span className="text-sm font-medium text-slate-700">{field.label}</span>
+            <span className="text-sm font-medium text-slate-700">
+              {field.label} <span className="text-red-500">*</span>
+            </span>
             <input
               type={field.type ?? 'text'}
               value={values[field.field]}
               onChange={(event) => onChange(field.field, event.target.value)}
               placeholder={field.placeholder}
+              required
               className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
             />
           </label>

@@ -23,6 +23,24 @@ export function formatDateLabel(dateString: string): string {
   }).format(date);
 }
 
+export type RegistrationPhase = 'not_open' | 'early' | 'regular' | 'closed';
+
+export function getRegistrationPhase(
+  currentDate: Date,
+  earlyStart: string,
+  earlyDeadline: string,
+  registrationDeadline: string,
+): RegistrationPhase {
+  const start = new Date(`${earlyStart}T00:00:00`);
+  const earlyEnd = new Date(`${earlyDeadline}T23:59:59`);
+  const regEnd = new Date(`${registrationDeadline}T23:59:59`);
+
+  if (currentDate < start) return 'not_open';
+  if (currentDate <= earlyEnd) return 'early';
+  if (currentDate <= regEnd) return 'regular';
+  return 'closed';
+}
+
 export function isEarlyRegistration(currentDate: Date, earlyDeadline: string): boolean {
   const deadline = new Date(`${earlyDeadline}T23:59:59`);
   return currentDate <= deadline;
@@ -33,6 +51,7 @@ export function getPricingTierFromGrade(grade: string): PricingTier {
 }
 
 export function calculateChildPrice(grade: string, earlyRegistration: boolean): number {
+  if (!grade) return 0;
   const pricingTier = getPricingTierFromGrade(grade);
   const pricingGroup = earlyRegistration ? REGISTRATION_PRICING.early : REGISTRATION_PRICING.regular;
 

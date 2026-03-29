@@ -10,9 +10,9 @@ export default function HomePage() {
         <div className="overflow-hidden rounded-[2rem] bg-white p-4 shadow-lg shadow-sky-100 ring-1 ring-sky-100 sm:p-6">
           <div className="flex min-h-[260px] items-end justify-center rounded-[1.5rem] bg-gradient-to-br from-yellow-200 via-sky-200 to-white px-6 py-10 text-center shadow-inner sm:min-h-[340px]">
             <div className="max-w-2xl rounded-[1.5rem] bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Summer at church</p>
-              <h1 className="mt-3 text-4xl font-bold tracking-tight text-sky-950 sm:text-5xl">VBS 2025</h1>
-              <p className="mt-3 text-xl font-medium text-yellow-700">Bright Summer Camp</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">Irvine Onnuri Church</p>
+              <h1 className="mt-3 text-4xl font-bold tracking-tight text-sky-950 sm:text-5xl">VBS 2026</h1>
+              <p className="mt-3 text-xl font-medium text-yellow-700">Kingdom Quest</p>
             </div>
           </div>
         </div>
@@ -46,19 +46,17 @@ export default function HomePage() {
           <h2 className="text-2xl font-semibold text-sky-950">Event Info</h2>
           <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700 sm:text-base">
             <div>
-              <p className="font-semibold text-sky-700">Dates</p>
+              <p className="font-semibold text-sky-700">Regular VBS (K–6th Grade)</p>
               <p>{EVENT_INFO.dates}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-sky-700">Beginner VBS (Preschool)</p>
+              <p>{EVENT_INFO.beginnerDates}</p>
             </div>
             <div>
               <p className="font-semibold text-sky-700">Location</p>
               <p>{EVENT_INFO.location}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-sky-700">About the Week</p>
-              <p>
-                Kids can look forward to worship, stories, crafts, games, and a bright summer atmosphere designed to
-                help them grow in faith and friendship.
-              </p>
+              <p className="text-slate-500">{EVENT_INFO.address}</p>
             </div>
           </div>
         </article>

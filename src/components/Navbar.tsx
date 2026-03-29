@@ -8,9 +8,9 @@ export default function Navbar() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div>
           <Link href="/" className="text-lg font-semibold text-slate-900">
-            VBS Registration
+            VBS 2026
           </Link>
-          <p className="text-sm text-slate-600">Church event registration portal</p>
+          <p className="text-sm text-slate-600">Irvine Onnuri Church</p>
         </div>
         <nav aria-label="Primary navigation">
           <ul className="flex flex-wrap items-center gap-2 sm:gap-3">

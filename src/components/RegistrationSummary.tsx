@@ -48,7 +48,7 @@ export default function RegistrationSummary({
       </div>
 
       <div className="mt-6 rounded-2xl border border-white/20 bg-white/5 p-4 text-sm leading-6 text-slate-200">
-        PayPal checkout and payment confirmation will be connected in a future phase.
+        Payment is due at time of registration. You will be redirected to complete payment after submitting this form.
       </div>
     </aside>
   );

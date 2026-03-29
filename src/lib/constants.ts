@@ -1,31 +1,38 @@
 export const EVENT_INFO = {
-  name: 'VBS Registration',
-  year: '2025',
-  dates: 'July 21-24, 2025',
-  location: 'Grace Church Fellowship Hall',
+  name: 'VBS 2026',
+  subtitle: 'Kingdom Quest',
+  church: 'Irvine Onnuri Church',
+  year: '2026',
+  dates: 'June 10–13, 2026',
+  beginnerDates: 'June 12–13, 2026',
+  location: 'Irvine Onnuri Church',
+  address: '17200 Jamboree Rd, Irvine, CA 92614',
   shortDescription:
-    'Join us for a joyful week of Bible lessons, music, crafts, games, and summer fun for the whole family.',
+    'Join us for Kingdom Quest — a week of Bible lessons, worship, crafts, and games for the whole family at Irvine Onnuri Church.',
   registrationFee: '$35 per child',
   registrationFeeAmount: 35,
   parentGuidePdfPath: '/docs/parent-guide.pdf',
-  earlyRegistrationDeadline: '2025-05-03',
+  earlyRegistrationStart: '2026-03-01',
+  earlyRegistrationDeadline: '2026-05-03',
+  regularRegistrationStart: '2026-05-04',
+  registrationDeadline: '2026-05-31',
 } as const;
 
 export const REGISTRATION_PRICING = {
   early: {
     beginner: 40,
-    standard: 80,
+    standard: 70,
   },
   regular: {
     beginner: 50,
-    standard: 100,
+    standard: 90,
   },
 } as const;
 
 export const EVENT_DETAILS = [
-  { label: 'Dates', value: EVENT_INFO.dates },
-  { label: 'Location', value: EVENT_INFO.location },
-  { label: 'Ages', value: 'Children entering kindergarten through 5th grade' },
+  { label: 'Regular VBS (K–6th)', value: EVENT_INFO.dates },
+  { label: 'Beginner VBS (Preschool)', value: EVENT_INFO.beginnerDates },
+  { label: 'Location', value: `${EVENT_INFO.location} — ${EVENT_INFO.address}` },
 ];
 
 export const NAV_LINKS = [
