@@ -48,7 +48,7 @@ export default function HomePage() {
                 <p className="font-semibold text-slate-900">Early $40 · Regular $50</p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white">Register</span>
+            <span className="shrink-0 rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-amber-900">Register</span>
           </Link>
 
           <Link
@@ -62,7 +62,7 @@ export default function HomePage() {
                 <p className="font-semibold text-slate-900">Early $70 · Regular $90</p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white">Register</span>
+            <span className="shrink-0 rounded-full bg-sky-600 px-5 py-2 text-sm font-bold text-white">Register</span>
           </Link>
         </section>
 

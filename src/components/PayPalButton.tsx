@@ -16,7 +16,7 @@ type PayPalButtonProps = {
   onError: (message: string) => void;
 };
 
-const clientId = process.env.NODE_ENV !== 'production'
+const clientId = process.env.NEXT_PUBLIC_PAYPAL_MODE !== 'live'
   ? process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID_SANDBOX!
   : process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
 

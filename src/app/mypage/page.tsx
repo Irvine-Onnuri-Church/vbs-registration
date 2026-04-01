@@ -1,9 +1,10 @@
 import MyPageClient from './MyPageClient';
 
-export default function MyPage({
+export default async function MyPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Promise<{ token?: string }>;
 }) {
-  return <MyPageClient token={searchParams.token ?? null} />;
+  const { token } = await searchParams;
+  return <MyPageClient token={token ?? null} />;
 }

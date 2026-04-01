@@ -18,9 +18,9 @@ export default function RegisterLandingPage() {
           {/* Pre-K */}
           <Link
             href="/register/prek"
-            className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 transition hover:shadow-lg hover:ring-orange-300"
+            className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 transition hover:shadow-lg hover:ring-amber-300"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-3xl transition group-hover:bg-orange-200">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl transition group-hover:bg-amber-200">
               🌟
             </div>
             <h2 className="mt-4 text-xl font-bold text-slate-900">Beginner Program</h2>
@@ -29,7 +29,7 @@ export default function RegisterLandingPage() {
               <p className="text-slate-600">Early: <span className="font-bold text-slate-900">$40</span></p>
               <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">$50</span></p>
             </div>
-            <span className="mt-6 inline-flex items-center rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white transition group-hover:bg-orange-400">
+            <span className="mt-6 inline-flex items-center rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-amber-900 transition group-hover:bg-amber-300">
               Register →
             </span>
           </Link>

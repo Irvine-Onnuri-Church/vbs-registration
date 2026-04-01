@@ -1,4 +1,4 @@
-const isSandbox = process.env.NODE_ENV !== 'production';
+const isSandbox = process.env.NEXT_PUBLIC_PAYPAL_MODE !== 'live';
 
 export const PAYPAL_BASE_URL = isSandbox
   ? 'https://api-m.sandbox.paypal.com'
