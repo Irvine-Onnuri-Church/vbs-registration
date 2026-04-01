@@ -25,21 +25,11 @@ function SuccessContent() {
         </p>
       </div>
 
-      {registrationId && (
-        <div className="w-full max-w-md rounded-3xl border border-sky-200 bg-sky-50 p-6 text-left">
-          <p className="text-sm font-semibold text-sky-700">Your Registration ID</p>
-          <p className="mt-2 break-all font-mono text-sm text-sky-950">{registrationId}</p>
-          <p className="mt-3 text-xs text-slate-500">
-            Save this ID — you&apos;ll need it along with your email to look up your registration on the My Page.
-          </p>
-        </div>
-      )}
-
       <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-left text-sm text-emerald-900">
         <p className="font-semibold">What&apos;s next?</p>
         <ul className="mt-2 space-y-1">
           <li>• A confirmation email has been sent with your registration details.</li>
-          <li>• You can look up your registration anytime on the My Page.</li>
+          <li>• To view your registration anytime, go to <strong>My Registration</strong> and enter your email — we&apos;ll send you a link.</li>
           <li>• Contact us if you have any questions or need to make changes.</li>
         </ul>
       </div>
@@ -64,7 +54,11 @@ function SuccessContent() {
 
 export default function RegistrationSuccessPage() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    }>
       <SuccessContent />
     </Suspense>
   );

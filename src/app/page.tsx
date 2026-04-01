@@ -26,7 +26,7 @@ export default function HomePage() {
         {/* Banner */}
         <section className="flex justify-center">
           <Image
-            src="/banner.png"
+            src="/banner1.png"
             alt="VBS 2026 Kingdom Quest — June 10–13"
             width={800}
             height={200}
@@ -35,13 +35,44 @@ export default function HomePage() {
           />
         </section>
 
+        {/* Program buttons */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/register/prek"
+            className="flex items-center justify-between gap-4 rounded-3xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-orange-300"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-3xl">🌟</span>
+              <div className="text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-orange-500">Beginner Program</p>
+                <p className="font-semibold text-slate-900">Early $40 · Regular $50</p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white">Register</span>
+          </Link>
+
+          <Link
+            href="/register/k6"
+            className="flex items-center justify-between gap-4 rounded-3xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-sky-300"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-3xl">🏰</span>
+              <div className="text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-sky-600">Regular Program</p>
+                <p className="font-semibold text-slate-900">Early $70 · Regular $90</p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white">Register</span>
+          </Link>
+        </section>
+
         {/* Event details */}
         <section className="rounded-3xl bg-[#0f1e5e] p-8 text-white shadow-xl">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: 'Dates', value: EVENT_INFO.dates },
               { label: 'Times', value: EVENT_INFO.times },
-              { label: 'Who', value: 'Kinder – 6th Grade' },
+              { label: 'Who', value: 'Pre-K – 6th Grade' },
               { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
             ].map((item) => (
               <div key={item.label}>
@@ -50,6 +81,26 @@ export default function HomePage() {
                 {item.sub && <p className="mt-0.5 text-sm text-blue-300">{item.sub}</p>}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-500">Early Registration</p>
+            <p className="mt-1 text-sm text-slate-500">Apr 5 – May 3, 2026</p>
+            <div className="mt-3 space-y-1 text-sm text-slate-700">
+              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">$70</span></p>
+              <p>Pre-K: <span className="font-bold text-slate-900">$40</span></p>
+            </div>
+          </div>
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Regular Registration</p>
+            <p className="mt-1 text-sm text-slate-500">May 4 – May 31, 2026</p>
+            <div className="mt-3 space-y-1 text-sm text-slate-700">
+              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">$90</span></p>
+              <p>Pre-K: <span className="font-bold text-slate-900">$50</span></p>
+            </div>
           </div>
         </section>
 

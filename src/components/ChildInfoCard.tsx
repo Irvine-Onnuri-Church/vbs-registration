@@ -22,19 +22,21 @@ type ChildInfoCardProps = {
   priceCategoryLabel: string;
   onChange: (childId: number, field: keyof ChildInfo, value: string) => void;
   onRemove?: () => void;
+  allowedGrades?: string[];
+  allowedSizes?: string[];
 };
 
 const genderOptions = ['Select gender', 'Female', 'Male'];
 const gradeOptions = ['Select grade', 'Pre-K', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 const tshirtSizes = [
   { value: '', label: 'Select size' },
-  { value: 'YS', label: 'YS – Youth Small' },
-  { value: 'YM', label: 'YM – Youth Medium' },
-  { value: 'YL', label: 'YL – Youth Large' },
-  { value: 'YXL', label: 'YXL – Youth X-Large' },
-  { value: 'AS', label: 'AS – Adult Small' },
-  { value: 'AM', label: 'AM – Adult Medium' },
-  { value: 'AL', label: 'AL – Adult Large' },
+  { value: 'XS', label: 'XS' },
+  { value: 'S', label: 'S' },
+  { value: 'M', label: 'M' },
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' },
+  { value: 'Adult S', label: 'Adult S' },
+  { value: 'Adult M', label: 'Adult M' },
 ];
 
 function calculateAgeFromDOB(dateString: string): string {
@@ -57,7 +59,15 @@ export default function ChildInfoCard({
   priceCategoryLabel,
   onChange,
   onRemove,
+  allowedGrades,
+  allowedSizes,
 }: ChildInfoCardProps) {
+  const grades = allowedGrades
+    ? ['Select grade', ...allowedGrades]
+    : gradeOptions;
+  const sizes = allowedSizes
+    ? [{ value: '', label: 'Select size' }, ...allowedSizes.map((s) => ({ value: s, label: s }))]
+    : tshirtSizes;
   function handleDateOfBirthChange(value: string) {
     onChange(child.id, 'dateOfBirth', value);
     onChange(child.id, 'age', value ? calculateAgeFromDOB(value) : '');
@@ -67,30 +77,17 @@ export default function ChildInfoCard({
 
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
-      <div className="flex items-start justify-between gap-4">
-        <SectionTitle
-          title={`Child ${childNumber}`}
-          description="Add the details needed for attendance, classroom planning, and child safety."
-          action={
+      <SectionTitle
+        title={childNumber > 1 ? `Child ${childNumber}` : 'Child Information'}
+        description="Add the details needed for attendance, classroom planning, and child safety."
+        action={
+          child.grade ? (
             <div className="rounded-full bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-900 ring-1 ring-sky-200">
-              {child.grade ? `Price: ${formatCurrency(childPrice)}` : 'Select a grade for pricing'}
+              Price: {formatCurrency(childPrice)}
             </div>
-          }
-        />
-        {onRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="mt-1 flex-shrink-0 rounded-full px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-700"
-          >
-            Remove
-          </button>
-        )}
-      </div>
-      {child.grade && (
-        <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">Pricing group: {priceCategoryLabel}</p>
-      )}
-
+          ) : undefined
+        }
+      />
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm font-medium text-slate-700">First Name <span className="text-red-500">*</span></span>
@@ -117,17 +114,6 @@ export default function ChildInfoCard({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Preferred Name</span>
-          <input
-            type="text"
-            value={child.preferredName}
-            onChange={(event) => onChange(child.id, 'preferredName', event.target.value)}
-            placeholder="Nickname or preferred name (optional)"
-            className={inputClass}
-          />
-        </label>
-
-        <label className="space-y-2">
           <span className="text-sm font-medium text-slate-700">Gender <span className="text-red-500">*</span></span>
           <select
             value={child.gender}
@@ -135,10 +121,8 @@ export default function ChildInfoCard({
             required
             className={inputClass}
           >
-            {genderOptions.map((option) => (
-              <option key={option} value={option === 'Select gender' ? '' : option}>
-                {option}
-              </option>
+            {genderOptions.map((o) => (
+              <option key={o} value={o === 'Select gender' ? '' : o}>{o}</option>
             ))}
           </select>
         </label>
@@ -173,10 +157,8 @@ export default function ChildInfoCard({
             required
             className={inputClass}
           >
-            {gradeOptions.map((option) => (
-              <option key={option} value={option === 'Select grade' ? '' : option}>
-                {option}
-              </option>
+            {grades.map((o) => (
+              <option key={o} value={o === 'Select grade' ? '' : o}>{o}</option>
             ))}
           </select>
         </label>
@@ -189,7 +171,7 @@ export default function ChildInfoCard({
             required
             className={inputClass}
           >
-            {tshirtSizes.map((option) => (
+            {sizes.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -219,6 +201,18 @@ export default function ChildInfoCard({
           />
         </label>
       </div>
+
+      {onRemove && (
+        <div className="mt-6 border-t border-slate-200 pt-4">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="w-full rounded-2xl border border-red-200 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 hover:text-red-700"
+          >
+            Remove Child
+          </button>
+        </div>
+      )}
     </section>
   );
 }

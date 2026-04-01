@@ -101,7 +101,7 @@ export async function POST(request: Request) {
       .from('registrations')
       .insert({
         parent_name: parentInfo.parentName,
-        email: parentInfo.email,
+        email: parentInfo.email.toLowerCase().trim(),
         phone_number: parentInfo.phoneNumber,
         emergency_contact_name: parentInfo.emergencyContactName,
         emergency_contact_phone: parentInfo.emergencyContactPhoneNumber,

@@ -1,0 +1,284 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useMemo, useRef, useState } from 'react';
+
+import ChildInfoCard, { type ChildInfo } from '@/components/ChildInfoCard';
+import PageContainer from '@/components/PageContainer';
+import ParentInfoSection, { type ParentInfo } from '@/components/ParentInfoSection';
+import PayPalButton from '@/components/PayPalButton';
+import RegistrationSummary from '@/components/RegistrationSummary';
+import SectionTitle from '@/components/SectionTitle';
+import { EVENT_INFO } from '@/lib/constants';
+import { calculateChildPrice, formatDateLabel, getRegistrationPhase } from '@/lib/utils';
+
+const GRADE_OPTIONS: Record<'prek' | 'k6', string[]> = {
+  prek: ['Pre-K'],
+  k6: ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'],
+};
+
+const SIZE_OPTIONS: Record<'prek' | 'k6', string[]> = {
+  prek: ['3Y', '4Y', '5Y'],
+  k6: ['XS', 'S', 'M', 'L', 'XL', 'Adult S', 'Adult M'],
+};
+
+const PROGRAM_LABELS: Record<'prek' | 'k6', string> = {
+  prek: 'Beginner Program',
+  k6: 'Regular Program',
+};
+
+const initialParentInfo: ParentInfo = {
+  parentName: '',
+  email: '',
+  phoneNumber: '',
+  emergencyContactName: '',
+  emergencyContactPhoneNumber: '',
+};
+
+function createEmptyChild(id: number, defaultGrade = ''): ChildInfo {
+  return {
+    id,
+    firstName: '',
+    lastName: '',
+    preferredName: '',
+    gender: '',
+    dateOfBirth: '',
+    age: '',
+    grade: defaultGrade,
+    tshirtSize: '',
+    allergyInformation: '',
+    medicalNotes: '',
+  };
+}
+
+export default function RegistrationFormClient({ program }: { program: 'prek' | 'k6' }) {
+  const router = useRouter();
+  const allowedGrades = GRADE_OPTIONS[program];
+  const allowedSizes = SIZE_OPTIONS[program];
+  const defaultGrade = program === 'prek' ? 'Pre-K' : '';
+
+  const [parentInfo, setParentInfo] = useState(initialParentInfo);
+  const [children, setChildren] = useState<ChildInfo[]>([createEmptyChild(1, defaultGrade)]);
+  const [photoConsent, setPhotoConsent] = useState(false);
+  const [liabilityAcknowledgment, setLiabilityAcknowledgment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const nextChildId = useRef(2);
+
+  const registrationPhase = getRegistrationPhase(
+    new Date(),
+    EVENT_INFO.earlyRegistrationStart,
+    EVENT_INFO.earlyRegistrationDeadline,
+    EVENT_INFO.registrationDeadline,
+  );
+  const earlyRegistration = registrationPhase === 'early' || registrationPhase === 'not_open';
+  const registrationOpen = registrationPhase !== 'closed';
+
+  const pricingPhaseLabel =
+    registrationPhase === 'early' || registrationPhase === 'not_open'
+      ? 'Early Registration'
+      : registrationPhase === 'regular'
+        ? 'Regular Registration'
+        : 'Registration Closed';
+
+  const childPricing = useMemo(
+    () =>
+      children.map((child, index) => ({
+        id: child.id,
+        label: child.firstName || child.preferredName || `Child ${index + 1}`,
+        price: calculateChildPrice(child.grade, earlyRegistration),
+        pricingTierLabel: !child.grade ? 'Select a grade' : PROGRAM_LABELS[program],
+      })),
+    [children, earlyRegistration, program],
+  );
+
+  const totalAmount = childPricing.reduce((sum, c) => sum + c.price, 0);
+
+  const isFormValid = useMemo(() => {
+    const parentValid =
+      parentInfo.parentName.trim() !== '' &&
+      parentInfo.email.trim() !== '' &&
+      parentInfo.phoneNumber.trim() !== '' &&
+      parentInfo.emergencyContactName.trim() !== '' &&
+      parentInfo.emergencyContactPhoneNumber.trim() !== '';
+
+    const childrenValid = children.every(
+      (child) =>
+        child.firstName.trim() !== '' &&
+        child.lastName.trim() !== '' &&
+        child.gender !== '' &&
+        child.dateOfBirth !== '' &&
+        child.grade !== '' &&
+        child.tshirtSize !== '',
+    );
+
+    return parentValid && childrenValid && photoConsent && liabilityAcknowledgment && totalAmount > 0;
+  }, [parentInfo, children, photoConsent, liabilityAcknowledgment, totalAmount]);
+
+  function handleParentInfoChange(field: keyof ParentInfo, value: string) {
+    setParentInfo((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleChildChange(childId: number, field: keyof ChildInfo, value: string) {
+    setChildren((prev) =>
+      prev.map((child) => (child.id === childId ? { ...child, [field]: value } : child)),
+    );
+  }
+
+  function handleAddAnotherChild() {
+    setChildren((prev) => [...prev, createEmptyChild(nextChildId.current++, defaultGrade)]);
+  }
+
+  function handleRemoveChild(childId: number) {
+    setChildren((prev) => prev.filter((child) => child.id !== childId));
+  }
+
+  function handlePaymentSuccess(registrationId: string) {
+    router.push(`/register/success?id=${registrationId}`);
+  }
+
+  function handlePaymentError(message: string) {
+    setPaymentError(message);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  return (
+    <div>
+      <div className="bg-[#0f1e5e] px-6 py-10 text-center text-white">
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Irvine Onnuri Church</p>
+        <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
+          🏰 {PROGRAM_LABELS[program]}
+        </h1>
+        <p className="mt-2 text-blue-200">Kingdom Quest · {EVENT_INFO.dates}</p>
+      </div>
+
+      <PageContainer className="space-y-8 pt-8">
+        <p className="text-sm text-slate-500">
+          Fields marked with <span className="text-red-500">*</span> are required.
+        </p>
+
+        {registrationPhase === 'closed' && (
+          <section className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:p-6">
+            <h2 className="text-base font-semibold">Registration Closed</h2>
+            <p className="mt-2">
+              Registration closed on <strong>{formatDateLabel(EVENT_INFO.registrationDeadline)}</strong>. Please contact us if you have questions.
+            </p>
+          </section>
+        )}
+
+        <section className="rounded-3xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-900 sm:p-6">
+          <h2 className="text-base font-semibold">Registration Pricing — {PROGRAM_LABELS[program]}</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className={`rounded-2xl border p-3 ${earlyRegistration ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
+              <p className="font-semibold">Early Registration</p>
+              <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
+              <p className="mt-1">{program === 'prek' ? 'Pre-K: $40' : 'K–6th Grade: $70'}</p>
+            </div>
+            <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
+              <p className="font-semibold">Regular Registration</p>
+              <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
+              <p className="mt-1">{program === 'prek' ? 'Pre-K: $50' : 'K–6th Grade: $90'}</p>
+            </div>
+          </div>
+          {registrationOpen && (
+            <p className="mt-3">Current phase: <strong>{pricingPhaseLabel}</strong></p>
+          )}
+        </section>
+
+        <div className={`grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start${!registrationOpen ? ' pointer-events-none opacity-50' : ''}`}>
+          <div className="space-y-6">
+            <ParentInfoSection values={parentInfo} onChange={handleParentInfoChange} />
+
+            <section className="space-y-4">
+              {children.map((child, index) => (
+                <ChildInfoCard
+                  key={child.id}
+                  child={child}
+                  childNumber={index + 1}
+                  childPrice={childPricing[index]?.price ?? 0}
+                  priceCategoryLabel={childPricing[index]?.pricingTierLabel ?? ''}
+                  onChange={handleChildChange}
+                  onRemove={children.length > 1 ? () => handleRemoveChild(child.id) : undefined}
+                  allowedGrades={allowedGrades}
+                  allowedSizes={allowedSizes}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={handleAddAnotherChild}
+                className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
+              >
+                + Add Another Child
+              </button>
+            </section>
+
+            <section id="payment-section" className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+              <SectionTitle
+                title="Consent and Acknowledgment"
+                description="Please read and agree to the following before submitting your registration."
+              />
+              <div className="mt-6 space-y-4">
+                <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <input
+                    type="checkbox"
+                    checked={photoConsent}
+                    onChange={(e) => setPhotoConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="text-sm leading-6 text-slate-700">
+                    I give permission for my child to appear in approved church photo or media materials.
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <input
+                    type="checkbox"
+                    checked={liabilityAcknowledgment}
+                    onChange={(e) => setLiabilityAcknowledgment(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="text-sm leading-6 text-slate-700">
+                    I acknowledge that my child(ren) will participate in VBS activities and release the church from liability for injuries arising from normal program participation.
+                  </span>
+                </label>
+              </div>
+              <div className="mt-6">
+                {isFormValid ? (
+                  <div className="space-y-3">
+                    {paymentError && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {paymentError}
+                      </div>
+                    )}
+                    <PayPalButton
+                      children={children}
+                      parentInfo={parentInfo}
+                      photoConsent={photoConsent}
+                      liabilityAcknowledgment={liabilityAcknowledgment}
+                      earlyRegistration={earlyRegistration}
+                      registrationPhase={registrationPhase}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                    Complete all required fields and check both boxes above to proceed to payment.
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <div className="hidden xl:block">
+          <RegistrationSummary
+            childCount={children.length}
+            pricingPhaseLabel={pricingPhaseLabel}
+            childPrices={childPricing}
+            totalAmount={totalAmount}
+            isFormValid={isFormValid}
+          />
+          </div>
+        </div>
+      </PageContainer>
+    </div>
+  );
+}

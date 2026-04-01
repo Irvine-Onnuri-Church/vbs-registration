@@ -1,3 +1,5 @@
+'use client';
+
 import { formatCurrency } from '@/lib/utils';
 
 type ChildPriceRow = {
@@ -11,6 +13,7 @@ type RegistrationSummaryProps = {
   pricingPhaseLabel: string;
   childPrices: ChildPriceRow[];
   totalAmount: number;
+  isFormValid: boolean;
 };
 
 export default function RegistrationSummary({
@@ -18,7 +21,11 @@ export default function RegistrationSummary({
   pricingPhaseLabel,
   childPrices,
   totalAmount,
+  isFormValid,
 }: RegistrationSummaryProps) {
+  function scrollToPayment() {
+    document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
   return (
     <aside className="rounded-3xl bg-slate-900 p-6 text-white shadow-sm sm:p-8 lg:sticky lg:top-6">
       <h2 className="text-xl font-semibold tracking-tight">Registration Summary</h2>
@@ -47,9 +54,15 @@ export default function RegistrationSummary({
         <span>{formatCurrency(totalAmount)}</span>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-white/20 bg-white/5 p-4 text-sm leading-6 text-slate-200">
-        Payment is due at time of registration. You will be redirected to complete payment after submitting this form.
-      </div>
+      <button
+        onClick={scrollToPayment}
+        className="mt-6 w-full rounded-full bg-orange-500 py-3 text-sm font-bold text-white transition hover:bg-orange-400 active:scale-95"
+      >
+        {isFormValid ? 'Pay Now →' : 'Complete Form to Pay ↓'}
+      </button>
+      {!isFormValid && (
+        <p className="mt-3 text-center text-xs text-slate-400">Fill in all required fields and check both consent boxes to unlock payment.</p>
+      )}
     </aside>
   );
 }
