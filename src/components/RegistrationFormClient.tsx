@@ -14,7 +14,7 @@ import { calculateChildPrice, formatDateLabel, getRegistrationPhase } from '@/li
 
 const GRADE_OPTIONS: Record<'prek' | 'k6', string[]> = {
   prek: ['Pre-K'],
-  k6: ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'],
+  k6: ['Transitional Kindergarten', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'],
 };
 
 const SIZE_OPTIONS: Record<'prek' | 'k6', string[]> = {
@@ -128,6 +128,16 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
     setChildren((prev) => [...prev, createEmptyChild(nextChildId.current++, defaultGrade)]);
   }
 
+  function getPreKDobWarning(dob: string): string | undefined {
+    if (!dob || program !== 'prek') return undefined;
+    const date = new Date(`${dob}T00:00:00`);
+    const min = new Date('2022-06-11T00:00:00');
+    const max = new Date('2023-12-31T00:00:00');
+    if (date < min) return 'This child may be too old for the Beginner Program (eligible birth dates: June 11, 2022 – December 31, 2023).';
+    if (date > max) return 'This child may be too young for the Beginner Program (eligible birth dates: June 11, 2022 – December 31, 2023).';
+    return undefined;
+  }
+
   function handleRemoveChild(childId: number) {
     setChildren((prev) => prev.filter((child) => child.id !== childId));
   }
@@ -148,7 +158,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
           🏰 {PROGRAM_LABELS[program]}
         </h1>
-        <p className="mt-2 text-blue-200">Kingdom Quest · {EVENT_INFO.dates}</p>
+        <p className="mt-2 text-blue-200">Kingdom Quest · {program === 'prek' ? EVENT_INFO.datesBeginner : EVENT_INFO.dates}</p>
       </div>
 
       <PageContainer className="space-y-8 pt-8">
@@ -200,6 +210,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
                   onRemove={children.length > 1 ? () => handleRemoveChild(child.id) : undefined}
                   allowedGrades={allowedGrades}
                   allowedSizes={allowedSizes}
+                  dobWarning={getPreKDobWarning(child.dateOfBirth)}
                 />
               ))}
               <button

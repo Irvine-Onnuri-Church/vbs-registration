@@ -72,7 +72,7 @@ export default function HomePage() {
             {[
               { label: 'Dates', value: EVENT_INFO.dates },
               { label: 'Times', value: EVENT_INFO.times },
-              { label: 'Who', value: 'Pre-K – 6th Grade' },
+              { label: 'Who', value: 'Beginner – 6th Grade' },
               { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
             ].map((item) => (
               <div key={item.label}>

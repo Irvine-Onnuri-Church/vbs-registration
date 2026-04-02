@@ -5,6 +5,7 @@ export const EVENT_INFO = {
   church: 'Irvine Onnuri Church',
   year: '2026',
   dates: 'June 10–13, 2026',
+  datesBeginner: 'June 12–13, 2026',
   times: 'Wed–Fri 3:00–7:00 PM · Sat 9:00 AM–1:00 PM',
   location: 'Irvine Onnuri Church',
   address: '17200 Jamboree Rd, Irvine, CA 92614',

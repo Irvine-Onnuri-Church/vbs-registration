@@ -24,6 +24,7 @@ type ChildInfoCardProps = {
   onRemove?: () => void;
   allowedGrades?: string[];
   allowedSizes?: string[];
+  dobWarning?: string;
 };
 
 const genderOptions = ['Select gender', 'Female', 'Male'];
@@ -61,6 +62,7 @@ export default function ChildInfoCard({
   onRemove,
   allowedGrades,
   allowedSizes,
+  dobWarning,
 }: ChildInfoCardProps) {
   const grades = allowedGrades
     ? ['Select grade', ...allowedGrades]
@@ -137,6 +139,12 @@ export default function ChildInfoCard({
             className={inputClass}
           />
         </label>
+
+        {dobWarning && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:col-span-2">
+            ⚠️ {dobWarning}
+          </div>
+        )}
 
         <label className="space-y-2">
           <span className="text-sm font-medium text-slate-700">Age</span>
