@@ -44,7 +44,7 @@ function buildConfirmationEmail(
   <div style="max-width:600px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:linear-gradient(135deg,#fef08a,#bae6fd);padding:32px 32px 24px;text-align:center;">
       <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:#0284c7;">${EVENT_INFO.church}</p>
-      <h1 style="margin:0;font-size:28px;font-weight:700;color:#0c4a6e;">VBS 2026 — Kingdom Quest</h1>
+      <h1 style="margin:0;font-size:28px;font-weight:700;color:#0c4a6e;">${EVENT_INFO.name} — ${EVENT_INFO.subtitle}</h1>
       <p style="margin:8px 0 0;font-size:14px;color:#475569;font-style:italic;">${EVENT_INFO.scripture}</p>
     </div>
 
@@ -144,9 +144,9 @@ export async function POST(request: Request) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: 'VBS 2026 <noreply@iocvbs.life>',
+        from: EVENT_INFO.emailFrom,
         to: parentInfo.email,
-        subject: `VBS 2026 Registration Confirmed — ${parentInfo.parentName}`,
+        subject: `${EVENT_INFO.name} Registration Confirmed — ${parentInfo.parentName}`,
         html: buildConfirmationEmail(
           parentInfo.parentName,
           registration.id,

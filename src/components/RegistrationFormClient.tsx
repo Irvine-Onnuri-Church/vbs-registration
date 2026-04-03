@@ -9,7 +9,7 @@ import ParentInfoSection, { type ParentInfo } from '@/components/ParentInfoSecti
 import PayPalButton from '@/components/PayPalButton';
 import RegistrationSummary from '@/components/RegistrationSummary';
 import SectionTitle from '@/components/SectionTitle';
-import { EVENT_INFO } from '@/lib/constants';
+import { BEGINNER_DOB, EVENT_INFO, PROGRAM_INFO, REGISTRATION_PRICING } from '@/lib/constants';
 import { calculateChildPrice, formatDateLabel, getRegistrationPhase } from '@/lib/utils';
 
 const GRADE_OPTIONS: Record<'prek' | 'k6', string[]> = {
@@ -108,11 +108,12 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
         child.gender !== '' &&
         child.dateOfBirth !== '' &&
         child.grade !== '' &&
-        child.tshirtSize !== '',
+        child.tshirtSize !== '' &&
+        !getPreKDobWarning(child.dateOfBirth),
     );
 
     return parentValid && childrenValid && photoConsent && liabilityAcknowledgment && totalAmount > 0;
-  }, [parentInfo, children, photoConsent, liabilityAcknowledgment, totalAmount]);
+  }, [parentInfo, children, photoConsent, liabilityAcknowledgment, totalAmount, program]);
 
   function handleParentInfoChange(field: keyof ParentInfo, value: string) {
     setParentInfo((prev) => ({ ...prev, [field]: value }));
@@ -131,10 +132,10 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
   function getPreKDobWarning(dob: string): string | undefined {
     if (!dob || program !== 'prek') return undefined;
     const date = new Date(`${dob}T00:00:00`);
-    const min = new Date('2022-06-11T00:00:00');
-    const max = new Date('2023-12-31T00:00:00');
-    if (date < min) return 'This child may be too old for the Beginner Program (eligible birth dates: June 11, 2022 – December 31, 2023).';
-    if (date > max) return 'This child may be too young for the Beginner Program (eligible birth dates: June 11, 2022 – December 31, 2023).';
+    const min = new Date(`${BEGINNER_DOB.min}T00:00:00`);
+    const max = new Date(`${BEGINNER_DOB.max}T00:00:00`);
+    if (date < min) return `This child may be too old for the Beginner Program (eligible birth dates: ${BEGINNER_DOB.labelLong}).`;
+    if (date > max) return `This child may be too young for the Beginner Program (eligible birth dates: ${BEGINNER_DOB.labelLong}).`;
     return undefined;
   }
 
@@ -154,11 +155,14 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
   return (
     <div>
       <div className="bg-[#0f1e5e] px-6 py-10 text-center text-white">
-        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Irvine Onnuri Church</p>
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">{EVENT_INFO.church}</p>
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
           🏰 {PROGRAM_LABELS[program]}
         </h1>
-        <p className="mt-2 text-blue-200">Kingdom Quest · {program === 'prek' ? EVENT_INFO.datesBeginner : EVENT_INFO.dates}</p>
+        <p className="mt-2 text-blue-200">{EVENT_INFO.subtitle} · {program === 'prek' ? EVENT_INFO.datesBeginner : EVENT_INFO.dates}</p>
+        {program === 'prek' && (
+          <p className="mt-1 text-sm text-blue-300">Who: {PROGRAM_INFO.beginner.who}</p>
+        )}
       </div>
 
       <PageContainer className="space-y-8 pt-8">
@@ -181,12 +185,12 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
             <div className={`rounded-2xl border p-3 ${earlyRegistration ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
               <p className="font-semibold">Early Registration</p>
               <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
-              <p className="mt-1">{program === 'prek' ? 'Pre-K: $40' : 'K–6th Grade: $70'}</p>
+              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.early.beginner}` : `K–6th Grade: $${REGISTRATION_PRICING.early.standard}`}</p>
             </div>
             <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
               <p className="font-semibold">Regular Registration</p>
               <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
-              <p className="mt-1">{program === 'prek' ? 'Pre-K: $50' : 'K–6th Grade: $90'}</p>
+              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.regular.beginner}` : `K–6th Grade: $${REGISTRATION_PRICING.regular.standard}`}</p>
             </div>
           </div>
           {registrationOpen && (
@@ -211,6 +215,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
                   allowedGrades={allowedGrades}
                   allowedSizes={allowedSizes}
                   dobWarning={getPreKDobWarning(child.dateOfBirth)}
+                  dobHint={program === 'prek' ? BEGINNER_DOB.label : undefined}
                 />
               ))}
               <button

@@ -25,6 +25,7 @@ type ChildInfoCardProps = {
   allowedGrades?: string[];
   allowedSizes?: string[];
   dobWarning?: string;
+  dobHint?: string;
 };
 
 const genderOptions = ['Select gender', 'Female', 'Male'];
@@ -63,6 +64,7 @@ export default function ChildInfoCard({
   allowedGrades,
   allowedSizes,
   dobWarning,
+  dobHint,
 }: ChildInfoCardProps) {
   const grades = allowedGrades
     ? ['Select grade', ...allowedGrades]
@@ -130,7 +132,7 @@ export default function ChildInfoCard({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Date of Birth <span className="text-red-500">*</span></span>
+          <span className="text-sm font-medium text-slate-700">Date of Birth <span className="text-red-500">*</span>{dobHint && <span className="ml-1 font-normal text-slate-400">({dobHint})</span>}</span>
           <input
             type="date"
             value={child.dateOfBirth}

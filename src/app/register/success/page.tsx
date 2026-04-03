@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 import PageContainer from '@/components/PageContainer';
+import { EVENT_INFO } from '@/lib/constants';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ function SuccessContent() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Complete!</h1>
         <p className="max-w-md text-base leading-7 text-slate-600">
-          Thank you for registering for VBS 2026 at Irvine Onnuri Church. A confirmation email has been sent to you.
+          Thank you for registering for {EVENT_INFO.name} at {EVENT_INFO.church}. A confirmation email has been sent to you.
         </p>
       </div>
 

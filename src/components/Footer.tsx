@@ -7,7 +7,7 @@ export default function Footer() {
         {EVENT_INFO.name} — {EVENT_INFO.subtitle}
       </p>
       <p className="mt-1">{EVENT_INFO.church} · {EVENT_INFO.address}</p>
-      <p className="mt-1 text-blue-500">© 2026 {EVENT_INFO.church}</p>
+      <p className="mt-1 text-blue-500">© {EVENT_INFO.year} {EVENT_INFO.church}</p>
     </footer>
   );
 }

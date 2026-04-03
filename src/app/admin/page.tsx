@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import PageContainer from '@/components/PageContainer';
+import { EVENT_INFO } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 
 type Child = {
@@ -70,7 +71,7 @@ function downloadCSV(registrations: Registration[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `VBS2026_registrations_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `${EVENT_INFO.name.replace(/\s+/g, '')}_registrations_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -161,7 +162,7 @@ export default function AdminPage() {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-slate-900">Admin Access</h1>
-            <p className="mt-1 text-sm text-slate-500">Irvine Onnuri VBS 2026</p>
+            <p className="mt-1 text-sm text-slate-500">{EVENT_INFO.church} {EVENT_INFO.name}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -200,7 +201,7 @@ export default function AdminPage() {
         <div className="space-y-1">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>
-          <p className="text-sm text-slate-500">Irvine Onnuri VBS 2026 — Kingdom Quest</p>
+          <p className="text-sm text-slate-500">{EVENT_INFO.church} {EVENT_INFO.name} — {EVENT_INFO.subtitle}</p>
         </div>
         <div className="flex gap-3">
           {registrations.length > 0 && (

@@ -38,9 +38,9 @@ export async function POST(request: Request) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: 'VBS 2026 <noreply@iocvbs.life>',
+      from: EVENT_INFO.emailFrom,
       to: email,
-      subject: 'Your VBS 2026 Registration Link',
+      subject: `Your ${EVENT_INFO.name} Registration Link`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   <div style="max-width:520px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#0f1e5e;padding:28px 32px;text-align:center;">
       <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:#93c5fd;">${EVENT_INFO.church}</p>
-      <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">VBS 2026 — Kingdom Quest</h1>
+      <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">${EVENT_INFO.name} — ${EVENT_INFO.subtitle}</h1>
     </div>
     <div style="padding:32px;">
       <h2 style="margin:0 0 8px;font-size:18px;color:#0f172a;">View Your Registration</h2>

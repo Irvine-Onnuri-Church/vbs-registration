@@ -1,12 +1,12 @@
 import Link from 'next/link';
 
-import { EVENT_INFO } from '@/lib/constants';
+import { EVENT_INFO, REGISTRATION_PRICING } from '@/lib/constants';
 
 export default function RegisterLandingPage() {
   return (
     <div>
       <div className="bg-[#0f1e5e] px-6 py-10 text-center text-white">
-        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Irvine Onnuri Church</p>
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">{EVENT_INFO.church}</p>
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">🏰 VBS Registration</h1>
         <p className="mt-2 text-blue-200">Kingdom Quest · {EVENT_INFO.dates}</p>
       </div>
@@ -26,8 +26,8 @@ export default function RegisterLandingPage() {
             <h2 className="mt-4 text-xl font-bold text-slate-900">Beginner Program</h2>
             <p className="mt-1 text-sm text-slate-500">For preschool-aged children</p>
             <div className="mt-4 space-y-1 text-sm">
-              <p className="text-slate-600">Early: <span className="font-bold text-slate-900">$40</span></p>
-              <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">$50</span></p>
+              <p className="text-slate-600">Early: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.beginner}</span></p>
+              <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.beginner}</span></p>
             </div>
             <span className="mt-6 inline-flex items-center rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-amber-900 transition group-hover:bg-amber-300">
               Register →
@@ -45,8 +45,8 @@ export default function RegisterLandingPage() {
             <h2 className="mt-4 text-xl font-bold text-slate-900">Regular Program</h2>
             <p className="mt-1 text-sm text-slate-500">Kindergarten through 6th grade</p>
             <div className="mt-4 space-y-1 text-sm">
-              <p className="text-slate-600">Early: <span className="font-bold text-slate-900">$70</span></p>
-              <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">$90</span></p>
+              <p className="text-slate-600">Early: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.standard}</span></p>
+              <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.standard}</span></p>
             </div>
             <span className="mt-6 inline-flex items-center rounded-full bg-[#0f1e5e] px-5 py-2 text-sm font-bold text-white transition group-hover:bg-[#1a2f7a]">
               Register →

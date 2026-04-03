@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { EVENT_INFO } from '@/lib/constants';
+import { EVENT_INFO, REGISTRATION_PRICING, PROGRAM_INFO } from '@/lib/constants';
+import { formatDateLabel } from '@/lib/utils';
 
 export default function HomePage() {
   return (
@@ -27,7 +28,7 @@ export default function HomePage() {
         <section className="flex justify-center">
           <Image
             src="/banner1.png"
-            alt="VBS 2026 Kingdom Quest — June 10–13"
+            alt={`${EVENT_INFO.name} ${EVENT_INFO.subtitle} — ${EVENT_INFO.dates}`}
             width={800}
             height={200}
             className="w-full rounded-3xl shadow-2xl"
@@ -45,7 +46,7 @@ export default function HomePage() {
               <span className="text-3xl">🌟</span>
               <div className="text-left">
                 <p className="text-xs font-bold uppercase tracking-wide text-orange-500">Beginner Program</p>
-                <p className="font-semibold text-slate-900">Early $40 · Regular $50</p>
+                <p className="font-semibold text-slate-900">Early ${REGISTRATION_PRICING.early.beginner} · Regular ${REGISTRATION_PRICING.regular.beginner}</p>
               </div>
             </div>
             <span className="shrink-0 rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-amber-900">Register</span>
@@ -59,7 +60,7 @@ export default function HomePage() {
               <span className="text-3xl">🏰</span>
               <div className="text-left">
                 <p className="text-xs font-bold uppercase tracking-wide text-sky-600">Regular Program</p>
-                <p className="font-semibold text-slate-900">Early $70 · Regular $90</p>
+                <p className="font-semibold text-slate-900">Early ${REGISTRATION_PRICING.early.standard} · Regular ${REGISTRATION_PRICING.regular.standard}</p>
               </div>
             </div>
             <span className="shrink-0 rounded-full bg-sky-600 px-5 py-2 text-sm font-bold text-white">Register</span>
@@ -67,20 +68,45 @@ export default function HomePage() {
         </section>
 
         {/* Event details */}
-        <section className="rounded-3xl bg-[#0f1e5e] p-8 text-white shadow-xl">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: 'Dates', value: EVENT_INFO.dates },
-              { label: 'Times', value: EVENT_INFO.times },
-              { label: 'Who', value: 'Beginner – 6th Grade' },
-              { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
-            ].map((item) => (
-              <div key={item.label}>
-                <p className="text-xs font-bold uppercase tracking-widest text-orange-400">{item.label}</p>
-                <p className="mt-1 font-semibold leading-snug text-white">{item.value}</p>
-                {item.sub && <p className="mt-0.5 text-sm text-blue-300">{item.sub}</p>}
-              </div>
-            ))}
+        <section className="rounded-3xl bg-[#0f1e5e] p-8 text-white shadow-xl space-y-6">
+          {/* Regular Program */}
+          <div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-sky-400">🏰 Regular Program</p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: 'Dates', value: EVENT_INFO.dates },
+                { label: 'Times', value: EVENT_INFO.times },
+                { label: 'Who', value: PROGRAM_INFO.regular.who },
+                { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
+              ].map((item) => (
+                <div key={item.label}>
+                  <p className="text-xs font-bold uppercase tracking-widest text-orange-400">{item.label}</p>
+                  <p className="mt-1 font-semibold leading-snug text-white">{item.value}</p>
+                  {item.sub && <p className="mt-0.5 text-sm text-blue-300">{item.sub}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <hr className="border-white/20" />
+
+          {/* Beginner Program */}
+          <div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-amber-400">🌟 Beginner Program</p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: 'Dates', value: EVENT_INFO.datesBeginner },
+                { label: 'Times', value: EVENT_INFO.timesBeginner },
+                { label: 'Who', value: PROGRAM_INFO.beginner.who },
+                { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address },
+              ].map((item) => (
+                <div key={item.label}>
+                  <p className="text-xs font-bold uppercase tracking-widest text-orange-400">{item.label}</p>
+                  <p className="mt-1 font-semibold leading-snug text-white">{item.value}</p>
+                  {item.sub && <p className="mt-0.5 text-sm text-blue-300">{item.sub}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -88,18 +114,18 @@ export default function HomePage() {
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <p className="text-xs font-bold uppercase tracking-widest text-orange-500">Early Registration</p>
-            <p className="mt-1 text-sm text-slate-500">Apr 5 – May 3, 2026</p>
+            <p className="mt-1 text-sm text-slate-500">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
             <div className="mt-3 space-y-1 text-sm text-slate-700">
-              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">$70</span></p>
-              <p>Pre-K: <span className="font-bold text-slate-900">$40</span></p>
+              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.standard}</span></p>
+              <p>Pre-K: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.beginner}</span></p>
             </div>
           </div>
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Regular Registration</p>
-            <p className="mt-1 text-sm text-slate-500">May 4 – May 31, 2026</p>
+            <p className="mt-1 text-sm text-slate-500">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
             <div className="mt-3 space-y-1 text-sm text-slate-700">
-              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">$90</span></p>
-              <p>Pre-K: <span className="font-bold text-slate-900">$50</span></p>
+              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.standard}</span></p>
+              <p>Pre-K: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.beginner}</span></p>
             </div>
           </div>
         </section>
