@@ -33,7 +33,7 @@ export const BEGINNER_DOB = {
 } as const;
 
 export const PROGRAM_INFO = {
-  regular: { who: 'Kinder – 6th Grade' },
+  regular: { who: 'TK – 6th Grade' },
   beginner: { who: `${BEGINNER_DOB.ageLabel} (${BEGINNER_DOB.label})` },
 } as const;
 

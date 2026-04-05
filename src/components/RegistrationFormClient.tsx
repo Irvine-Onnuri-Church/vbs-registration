@@ -185,12 +185,12 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
             <div className={`rounded-2xl border p-3 ${earlyRegistration ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
               <p className="font-semibold">Early Registration</p>
               <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
-              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.early.beginner}` : `K–6th Grade: $${REGISTRATION_PRICING.early.standard}`}</p>
+              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.early.beginner}` : `TK–6th Grade: $${REGISTRATION_PRICING.early.standard}`}</p>
             </div>
             <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
               <p className="font-semibold">Regular Registration</p>
               <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
-              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.regular.beginner}` : `K–6th Grade: $${REGISTRATION_PRICING.regular.standard}`}</p>
+              <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.regular.beginner}` : `TK–6th Grade: $${REGISTRATION_PRICING.regular.standard}`}</p>
             </div>
           </div>
           {registrationOpen && (

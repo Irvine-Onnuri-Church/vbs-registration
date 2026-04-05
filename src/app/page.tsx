@@ -116,7 +116,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-widest text-orange-500">Early Registration</p>
             <p className="mt-1 text-sm text-slate-500">{formatDateLabel(EVENT_INFO.earlyRegistrationStart)} – {formatDateLabel(EVENT_INFO.earlyRegistrationDeadline)}</p>
             <div className="mt-3 space-y-1 text-sm text-slate-700">
-              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.standard}</span></p>
+              <p>TK – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.standard}</span></p>
               <p>Pre-K: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.beginner}</span></p>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Regular Registration</p>
             <p className="mt-1 text-sm text-slate-500">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
             <div className="mt-3 space-y-1 text-sm text-slate-700">
-              <p>Kinder – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.standard}</span></p>
+              <p>TK – 6th Grade: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.standard}</span></p>
               <p>Pre-K: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.beginner}</span></p>
             </div>
           </div>

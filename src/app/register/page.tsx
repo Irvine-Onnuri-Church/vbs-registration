@@ -34,7 +34,7 @@ export default function RegisterLandingPage() {
             </span>
           </Link>
 
-          {/* K–6th */}
+          {/* TK–6th */}
           <Link
             href="/register/k6"
             className="group flex flex-col items-center rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 transition hover:shadow-lg hover:ring-sky-300"
@@ -43,7 +43,7 @@ export default function RegisterLandingPage() {
               🏰
             </div>
             <h2 className="mt-4 text-xl font-bold text-slate-900">Regular Program</h2>
-            <p className="mt-1 text-sm text-slate-500">Kindergarten through 6th grade</p>
+            <p className="mt-1 text-sm text-slate-500">Transitional Kindergarten through 6th grade</p>
             <div className="mt-4 space-y-1 text-sm">
               <p className="text-slate-600">Early: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.early.standard}</span></p>
               <p className="text-slate-600">Regular: <span className="font-bold text-slate-900">${REGISTRATION_PRICING.regular.standard}</span></p>

@@ -68,7 +68,7 @@ export default function Design1Page() {
           {[
             { label: 'Dates', value: EVENT_INFO.dates, icon: '📅' },
             { label: 'Times', value: EVENT_INFO.times, icon: '🕒' },
-            { label: 'Who', value: 'Kinder – 6th Grade', icon: '👦' },
+            { label: 'Who', value: 'TK – 6th Grade', icon: '👦' },
             { label: 'Location', value: EVENT_INFO.location, sub: EVENT_INFO.address, icon: '📍' },
           ].map((item) => (
             <div key={item.label} className="bg-white px-6 py-8">
