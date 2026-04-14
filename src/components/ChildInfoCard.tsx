@@ -190,23 +190,23 @@ export default function ChildInfoCard({
         </label>
 
         <label className="space-y-2 sm:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Allergy Information</span>
+          <span className="text-sm font-medium text-slate-700">Allergies / Other Medical Conditions</span>
           <textarea
             rows={3}
             value={child.allergyInformation}
             onChange={(event) => onChange(child.id, 'allergyInformation', event.target.value)}
-            placeholder="List any food or environmental allergies, or enter 'None'."
+            placeholder="List any food or environmental allergies and other medical conditions, or enter 'None'."
             className={inputClass}
           />
         </label>
 
         <label className="space-y-2 sm:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Medical / Special Notes</span>
+          <span className="text-sm font-medium text-slate-700">Friend to be with</span>
           <textarea
             rows={4}
             value={child.medicalNotes}
             onChange={(event) => onChange(child.id, 'medicalNotes', event.target.value)}
-            placeholder="Share any medical conditions, accessibility needs, or classroom notes (optional)."
+            placeholder="Name a friend your child would like to be grouped with (optional)."
             className={inputClass}
           />
         </label>

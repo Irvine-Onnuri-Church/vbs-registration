@@ -40,7 +40,7 @@ function downloadCSV(registrations: Registration[]) {
     'Registration ID', 'Date', 'Phase', 'Status', 'Total',
     'Parent Name', 'Email', 'Phone',
     'Emergency Contact', 'Emergency Phone', 'Photo Consent',
-    'Child Name', 'Grade', 'Gender', 'DOB', 'T-Shirt', 'Allergies', 'Medical Notes', 'Price',
+    'Child Name', 'Grade', 'Gender', 'DOB', 'T-Shirt', 'Allergies / Other Medical Conditions', 'Friend to be with', 'Price',
   ];
 
   const rows: string[][] = [];
@@ -325,10 +325,10 @@ export default function AdminPage() {
                               <p className="text-slate-500">{child.grade} · {child.gender} · T-shirt: {child.tshirt_size}</p>
                               <p className="text-slate-500">DOB: {child.date_of_birth}</p>
                               {child.allergy_information && (
-                                <p className="mt-1 text-amber-700">⚠ Allergies: {child.allergy_information}</p>
+                                <p className="mt-1 text-amber-700">⚠ Allergies / Medical: {child.allergy_information}</p>
                               )}
                               {child.medical_notes && (
-                                <p className="text-amber-700">⚠ Notes: {child.medical_notes}</p>
+                                <p className="text-slate-600">Friend to be with: {child.medical_notes}</p>
                               )}
                             </div>
                             <span className="font-semibold text-slate-700">{formatCurrency(child.price)}</span>
