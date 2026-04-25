@@ -6,13 +6,9 @@ import { calculateChildPrice } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
-    const { children, earlyRegistration, parentEmail } = await request.json();
+    const { children, earlyRegistration } = await request.json();
 
     // Calculate total server-side to prevent tampering
-    const childNames: string = children
-      .map((child: { firstName: string; lastName: string }) => `${child.firstName} ${child.lastName}`)
-      .join(', ');
-
     const total: number = children.reduce((sum: number, child: { grade: string }) => {
       return sum + calculateChildPrice(child.grade, earlyRegistration);
     }, 0);
@@ -33,12 +29,11 @@ export async function POST(request: Request) {
         intent: 'CAPTURE',
         purchase_units: [
           {
-            custom_id: parentEmail ?? '',
-            description: `${childNames} — ${parentEmail ?? ''}`,
             amount: {
               currency_code: 'USD',
               value: total.toFixed(2),
             },
+            description: `VBS ${EVENT_INFO.year} Registration – ${children.length} child(ren)`,
           },
         ],
       }),

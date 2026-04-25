@@ -31,7 +31,6 @@ type Registration = {
   total_amount: number;
   registration_phase: string;
   payment_status: string;
-  paypal_order_id: string | null;
   created_at: string;
   children: Child[];
 };
@@ -338,21 +337,8 @@ export default function AdminPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="mt-4 space-y-1 rounded-2xl bg-slate-100 px-4 py-2 font-mono text-xs text-slate-400">
-                    <p>Registration ID: {reg.id}</p>
-                    {reg.paypal_order_id && (
-                      <p>
-                        PayPal Order ID:{' '}
-                        <a
-                          href={`https://www.paypal.com/merchant/transactions/details/${reg.paypal_order_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sky-500 underline hover:text-sky-700"
-                        >
-                          {reg.paypal_order_id}
-                        </a>
-                      </p>
-                    )}
+                  <div className="mt-4 rounded-2xl bg-slate-100 px-4 py-2 font-mono text-xs text-slate-400">
+                    ID: {reg.id}
                   </div>
                 </div>
               )}
