@@ -90,7 +90,7 @@ function buildConfirmationEmail(
 
 export async function POST(request: Request) {
   try {
-    const { parentInfo, children, photoConsent, liabilityAcknowledgment, paypalOrderId, earlyRegistration, registrationPhase } =
+    const { parentInfo, children, photoConsent, liabilityAcknowledgment, paypalOrderId, paypalCaptureId, paymentTime, earlyRegistration, registrationPhase } =
       await request.json();
 
     const totalAmount: number = children.reduce((sum: number, child: ChildInput) => {
@@ -108,7 +108,9 @@ export async function POST(request: Request) {
         photo_consent: photoConsent,
         liability_acknowledgment: liabilityAcknowledgment,
         paypal_order_id: paypalOrderId,
+        paypal_capture_id: paypalCaptureId ?? null,
         payment_status: 'completed',
+        payment_time: paymentTime ?? null,
         total_amount: totalAmount,
         registration_phase: registrationPhase,
       })

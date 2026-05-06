@@ -22,7 +22,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment capture failed.' }, { status: 400 });
     }
 
-    return NextResponse.json({ status: data.status, orderId: data.id });
+    const capture = data.purchase_units?.[0]?.payments?.captures?.[0];
+    const captureId = capture?.id ?? null;
+    const captureTime = capture?.create_time ?? null;
+
+    return NextResponse.json({ status: data.status, orderId: data.id, captureId, captureTime });
   } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

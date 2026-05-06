@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { EVENT_INFO } from '@/lib/constants';
 import { getPayPalAccessToken, PAYPAL_BASE_URL } from '@/lib/paypal';
 import { calculateChildPrice } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
-    const { children, earlyRegistration, parentEmail } = await request.json();
+    const { children, earlyRegistration, parentName, parentEmail, parentPhone } = await request.json();
 
     // Calculate total server-side to prevent tampering
     const childNames: string = children
@@ -23,6 +22,8 @@ export async function POST(request: Request) {
 
     const accessToken = await getPayPalAccessToken();
 
+    const itemName = `VBS 2026 Registration Fee — Parent: ${parentName} | Children: ${childNames} | ${parentEmail} | ${parentPhone}`;
+
     const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -31,6 +32,19 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         intent: 'CAPTURE',
+        payer: {
+          name: {
+            given_name: parentName?.split(' ')[0] ?? '',
+            surname: parentName?.split(' ').slice(1).join(' ') || '',
+          },
+          email_address: parentEmail ?? '',
+          phone: {
+            phone_type: 'MOBILE',
+            phone_number: {
+              national_number: parentPhone ?? '',
+            },
+          },
+        },
         purchase_units: [
           {
             custom_id: parentEmail ?? '',
@@ -38,7 +52,24 @@ export async function POST(request: Request) {
             amount: {
               currency_code: 'USD',
               value: total.toFixed(2),
+              breakdown: {
+                item_total: {
+                  currency_code: 'USD',
+                  value: total.toFixed(2),
+                },
+              },
             },
+            items: [
+              {
+                name: itemName.substring(0, 127),
+                quantity: '1',
+                unit_amount: {
+                  currency_code: 'USD',
+                  value: total.toFixed(2),
+                },
+                sku: 'VBS2026',
+              },
+            ],
           },
         ],
       }),
