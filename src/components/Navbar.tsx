@@ -30,6 +30,7 @@ export default function Navbar() {
                 Register
               </Link>
             </li>
+            <li id="navbar-trailing-slot"></li>
           </ul>
         </nav>
       </div>

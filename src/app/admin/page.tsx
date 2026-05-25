@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import PageContainer from '@/components/PageContainer';
 import { EVENT_INFO } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, PieChart, Pie, Cell, Legend, LabelList,
 } from 'recharts';
 
 function formatPhone(phone: string): string {
@@ -57,18 +58,22 @@ type Registration = {
 
 function downloadCSV(rows: { reg: Registration; child: Child }[]) {
   const headers = [
-    'Registration ID', 'Date', 'Phase', 'Status', 'Total',
-    'Parent Name', 'Email', 'Phone',
-    'Emergency Contact', 'Emergency Phone', 'Photo Consent',
-    'Child Name', 'Grade', 'Gender', 'DOB', 'T-Shirt', 'Allergies / Other Medical Conditions', 'Friend to be with', 'Price',
+    'Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender',
+    'Parent Name', 'Mobile', 'Email',
+    'Allergies', 'Friend', 'Phase', 'Status', 'Price',
+    'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total',
   ];
 
+  const formatDobCSV = (dob: string) => {
+    const [year, month, day] = dob.split('-');
+    return year && month && day ? `${month}-${day}-${year}` : dob;
+  };
+
   const csvRows = rows.map(({ reg, child }) => [
-    reg.id, new Date(reg.created_at).toLocaleDateString(), reg.registration_phase, reg.payment_status, String(reg.total_amount),
-    reg.parent_name, reg.email, reg.phone_number,
-    reg.emergency_contact_name, reg.emergency_contact_phone, reg.photo_consent ? 'Yes' : 'No',
-    `${child.first_name} ${child.last_name}`, child.grade, child.gender, child.date_of_birth, child.tshirt_size,
-    child.allergy_information ?? '', child.medical_notes ?? '', String(child.price),
+    new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
+    reg.parent_name, formatPhone(reg.phone_number), reg.email,
+    child.allergy_information ?? '', child.medical_notes ?? '', reg.registration_phase, reg.payment_status, String(child.price),
+    reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.total_amount),
   ]);
 
   const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
@@ -224,6 +229,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 {gradeData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
+                <LabelList dataKey="count" position="top" style={{ fontSize: 12, fontWeight: 600, fill: '#334155' }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -243,6 +249,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 paddingAngle={4}
                 dataKey="value"
                 label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                labelLine={false}
               >
                 <Cell fill="#0284c7" />
                 <Cell fill="#f59e0b" />
@@ -270,6 +277,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 paddingAngle={4}
                 dataKey="value"
                 label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                labelLine={false}
               >
                 {genderData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -290,7 +298,9 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
               <XAxis dataKey="size" tick={{ fontSize: 12 }} stroke="#94a3b8" />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} stroke="#94a3b8" />
               <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
-              <Bar dataKey="count" name="Children" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" name="Children" fill="#8b5cf6" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="count" position="top" style={{ fontSize: 12, fontWeight: 600, fill: '#334155' }} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -321,7 +331,12 @@ export default function AdminPage() {
   const [filterAllergies, setFilterAllergies] = useState<boolean | null>(null);
   const [filterGender, setFilterGender] = useState<string | null>(null);
   const [filterPhase, setFilterPhase] = useState<string | null>(null);
+  const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
   const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase;
+
+  useEffect(() => {
+    setNavSlot(document.getElementById('navbar-trailing-slot'));
+  }, []);
 
   function clearAllFilters() {
     setSearchQuery('');
@@ -514,30 +529,34 @@ export default function AdminPage() {
   // ── Dashboard ──
   return (
     <div className={`mx-auto w-full px-4 py-10 sm:px-6 lg:px-8 ${viewMode === 'table' ? 'max-w-[1800px]' : viewMode === 'analytics' ? 'max-w-7xl' : 'max-w-6xl'} space-y-8`}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>
-          <p className="text-sm text-slate-500">{EVENT_INFO.church} {EVENT_INFO.name} — {EVENT_INFO.subtitle}</p>
+      {navSlot && createPortal(
+        <button
+          onClick={handleLogout}
+          className="inline-flex rounded-full bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-md transition hover:bg-orange-400 sm:px-5 sm:py-2 sm:text-sm"
+        >
+          Sign Out
+        </button>,
+        navSlot,
+      )}
+      <div className="space-y-1">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>
+        <p className="text-sm text-slate-500">{EVENT_INFO.church} {EVENT_INFO.name} — {EVENT_INFO.subtitle}</p>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm text-slate-500">Total Registrations</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{registrations.length}</p>
         </div>
-        <div className="flex gap-3">
-          {registrations.length > 0 && (
-            <button
-              onClick={() => downloadCSV(filteredRows)}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download CSV
-            </button>
-          )}
-          <button
-            onClick={handleLogout}
-            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
-          >
-            Sign Out
-          </button>
+        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm text-slate-500">Total Children</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
+        </div>
+        <div className="rounded-3xl bg-[#0f1e5e] p-6 shadow-sm">
+          <p className="text-sm text-blue-300">Total Collected</p>
+          <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
         </div>
       </div>
 
@@ -564,22 +583,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
-      {/* Summary stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Total Registrations</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{registrations.length}</p>
-        </div>
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Total Children</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
-        </div>
-        <div className="rounded-3xl bg-[#0f1e5e] p-6 shadow-sm">
-          <p className="text-sm text-blue-300">Total Collected</p>
-          <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
-        </div>
-      </div>
 
       {/* Error state */}
       {dataError && (
@@ -617,8 +620,9 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Filter chips */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Filter chips + Download */}
+            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
               {/* Grade */}
               <div className="relative inline-flex items-center">
                 <select
@@ -712,6 +716,16 @@ export default function AdminPage() {
                   Clear all
                 </button>
               )}
+            </div>
+              <button
+                onClick={() => downloadCSV(filteredRows)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                CSV
+              </button>
             </div>
           </div>
 

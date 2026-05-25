@@ -50,12 +50,7 @@ function buildConfirmationEmail(
 
     <div style="padding:32px;">
       <h2 style="margin:0 0 8px;font-size:20px;color:#0f172a;">Registration Confirmed!</h2>
-      <p style="margin:0 0 24px;color:#475569;">Dear ${parentName}, your registration is complete. Please save your Registration ID below to look up your registration at any time.</p>
-
-      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:16px;margin-bottom:24px;">
-        <p style="margin:0 0 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#0284c7;">Registration ID</p>
-        <p style="margin:0;font-size:14px;font-family:monospace;color:#0c4a6e;word-break:break-all;">${registrationId}</p>
-      </div>
+      <p style="margin:0 0 24px;color:#475569;">Dear ${parentName}, your registration is complete!</p>
 
       <h3 style="margin:0 0 12px;font-size:15px;color:#0f172a;">Registered Children</h3>
       <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">
@@ -69,10 +64,12 @@ function buildConfirmationEmail(
         <tbody>${childRows}</tbody>
       </table>
 
-      <div style="background:#0f172a;border-radius:12px;padding:16px;display:flex;justify-content:space-between;margin-bottom:24px;">
-        <span style="color:#cbd5e1;font-size:14px;font-weight:600;">Total Paid</span>
-        <span style="color:#ffffff;font-size:16px;font-weight:700;">${formatCurrency(totalAmount)}</span>
-      </div>
+      <table style="width:100%;border-collapse:collapse;background:#0f172a;border-radius:12px;margin-bottom:24px;">
+        <tr>
+          <td style="padding:16px;color:#cbd5e1;font-size:14px;font-weight:600;">Total Paid</td>
+          <td style="padding:16px;color:#ffffff;font-size:16px;font-weight:700;text-align:right;">${formatCurrency(totalAmount)}</td>
+        </tr>
+      </table>
 
       <div style="border-top:1px solid #e2e8f0;padding-top:20px;font-size:13px;color:#64748b;">
         <p style="margin:0 0 6px;"><strong style="color:#0f172a;">Dates:</strong> ${EVENT_INFO.dates}</p>
