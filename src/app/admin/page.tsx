@@ -55,7 +55,7 @@ type Registration = {
   children: Child[];
 };
 
-function downloadCSV(registrations: Registration[]) {
+function downloadCSV(rows: { reg: Registration; child: Child }[]) {
   const headers = [
     'Registration ID', 'Date', 'Phase', 'Status', 'Total',
     'Parent Name', 'Email', 'Phone',
@@ -63,30 +63,16 @@ function downloadCSV(registrations: Registration[]) {
     'Child Name', 'Grade', 'Gender', 'DOB', 'T-Shirt', 'Allergies / Other Medical Conditions', 'Friend to be with', 'Price',
   ];
 
-  const rows: string[][] = [];
-  registrations.forEach((reg) => {
-    if (reg.children.length === 0) {
-      rows.push([
-        reg.id, new Date(reg.created_at).toLocaleDateString(), reg.registration_phase, reg.payment_status, String(reg.total_amount),
-        reg.parent_name, reg.email, reg.phone_number,
-        reg.emergency_contact_name, reg.emergency_contact_phone, reg.photo_consent ? 'Yes' : 'No',
-        '', '', '', '', '', '', '', '',
-      ]);
-    } else {
-      reg.children.forEach((child) => {
-        rows.push([
-          reg.id, new Date(reg.created_at).toLocaleDateString(), reg.registration_phase, reg.payment_status, String(reg.total_amount),
-          reg.parent_name, reg.email, reg.phone_number,
-          reg.emergency_contact_name, reg.emergency_contact_phone, reg.photo_consent ? 'Yes' : 'No',
-          `${child.first_name} ${child.last_name}`, child.grade, child.gender, child.date_of_birth, child.tshirt_size,
-          child.allergy_information ?? '', child.medical_notes ?? '', String(child.price),
-        ]);
-      });
-    }
-  });
+  const csvRows = rows.map(({ reg, child }) => [
+    reg.id, new Date(reg.created_at).toLocaleDateString(), reg.registration_phase, reg.payment_status, String(reg.total_amount),
+    reg.parent_name, reg.email, reg.phone_number,
+    reg.emergency_contact_name, reg.emergency_contact_phone, reg.photo_consent ? 'Yes' : 'No',
+    `${child.first_name} ${child.last_name}`, child.grade, child.gender, child.date_of_birth, child.tshirt_size,
+    child.allergy_information ?? '', child.medical_notes ?? '', String(child.price),
+  ]);
 
   const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
-  const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\n');
+  const csv = [headers, ...csvRows].map((row) => row.map(escape).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -382,20 +368,22 @@ export default function AdminPage() {
     return true;
   });
 
+  const gradeOrder: Record<string, number> = { 'Pre-K': 0, 'Transitional Kindergarten': 1, 'Kindergarten': 2, '1st Grade': 3, '2nd Grade': 4, '3rd Grade': 5, '4th Grade': 6, '5th Grade': 7, '6th Grade': 8 };
+
   if (sortKey) {
     filteredRows.sort((a, b) => {
-      let aVal = '';
-      let bVal = '';
+      let cmp = 0;
       switch (sortKey) {
-        case 'date': aVal = a.reg.created_at; bVal = b.reg.created_at; break;
-        case 'parent': aVal = a.reg.parent_name.toLowerCase(); bVal = b.reg.parent_name.toLowerCase(); break;
-        case 'email': aVal = a.reg.email; bVal = b.reg.email; break;
-        case 'phone': aVal = a.reg.phone_number; bVal = b.reg.phone_number; break;
-        case 'grade': aVal = a.child.grade; bVal = b.child.grade; break;
-        case 'gender': aVal = a.child.gender; bVal = b.child.gender; break;
-        case 'dob': aVal = a.child.date_of_birth; bVal = b.child.date_of_birth; break;
+        case 'date': { const av = a.reg.created_at; const bv = b.reg.created_at; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'child': { const av = `${a.child.first_name} ${a.child.last_name}`.toLowerCase(); const bv = `${b.child.first_name} ${b.child.last_name}`.toLowerCase(); cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'parent': { const av = a.reg.parent_name.toLowerCase(); const bv = b.reg.parent_name.toLowerCase(); cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'email': { const av = a.reg.email; const bv = b.reg.email; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'phone': { const av = a.reg.phone_number; const bv = b.reg.phone_number; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'grade': { const av = gradeOrder[a.child.grade] ?? 99; const bv = gradeOrder[b.child.grade] ?? 99; cmp = av - bv; break; }
+        case 'tshirt': { const sizeOrder: Record<string, number> = { '3Y': 0, '4Y': 1, '5Y': 2, 'XS': 3, 'S': 4, 'M': 5, 'L': 6, 'XL': 7, 'Adult S': 8, 'Adult M': 9 }; const av = sizeOrder[a.child.tshirt_size] ?? 99; const bv = sizeOrder[b.child.tshirt_size] ?? 99; cmp = av - bv; break; }
+        case 'gender': { const av = a.child.gender; const bv = b.child.gender; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'dob': { const av = a.child.date_of_birth; const bv = b.child.date_of_birth; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
       }
-      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }
@@ -535,7 +523,7 @@ export default function AdminPage() {
         <div className="flex gap-3">
           {registrations.length > 0 && (
             <button
-              onClick={() => downloadCSV(registrations)}
+              onClick={() => downloadCSV(filteredRows)}
               className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -566,7 +554,7 @@ export default function AdminPage() {
               <button
                 key={key}
                 onClick={() => setViewMode(key)}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                className={`rounded-full px-5 py-2 text-base font-semibold transition ${
                   viewMode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -620,12 +608,12 @@ export default function AdminPage() {
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0); }}
                   placeholder="Search name or email"
-                  className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                 />
               </div>
-              {dataLoading && <span className="text-sm text-slate-400">Loading...</span>}
+              {dataLoading && <span className="text-base text-slate-400">Loading...</span>}
               {hasFilters && (
-                <span className="text-sm text-slate-500">{totalRows} of {allTableRows.length}</span>
+                <span className="text-base text-slate-500">{totalRows} of {allTableRows.length}</span>
               )}
             </div>
 
@@ -636,7 +624,7 @@ export default function AdminPage() {
                 <select
                   value={filterGrade ?? ''}
                   onChange={(e) => { setFilterGrade(e.target.value || null); setCurrentPage(0); }}
-                  className={`rounded-full border py-1 text-xs font-semibold outline-none transition ${filterGrade ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterGrade ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
                   <option value="">Grade</option>
                   {gradeOptions.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -653,7 +641,7 @@ export default function AdminPage() {
                 <select
                   value={filterTshirt ?? ''}
                   onChange={(e) => { setFilterTshirt(e.target.value || null); setCurrentPage(0); }}
-                  className={`rounded-full border py-1 text-xs font-semibold outline-none transition ${filterTshirt ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterTshirt ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
                   <option value="">T-Shirt</option>
                   {tshirtOptions.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -670,7 +658,7 @@ export default function AdminPage() {
                 <select
                   value={filterGender ?? ''}
                   onChange={(e) => { setFilterGender(e.target.value || null); setCurrentPage(0); }}
-                  className={`rounded-full border py-1 text-xs font-semibold outline-none transition ${filterGender ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterGender ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
                   <option value="">Gender</option>
                   <option value="Male">Male</option>
@@ -688,7 +676,7 @@ export default function AdminPage() {
                 <select
                   value={filterPhase ?? ''}
                   onChange={(e) => { setFilterPhase(e.target.value || null); setCurrentPage(0); }}
-                  className={`rounded-full border py-1 text-xs font-semibold outline-none transition ${filterPhase ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterPhase ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
                   <option value="">Phase</option>
                   <option value="early">Early Bird</option>
@@ -706,7 +694,7 @@ export default function AdminPage() {
                 <select
                   value={filterAllergies === null ? '' : filterAllergies ? 'yes' : 'no'}
                   onChange={(e) => { setFilterAllergies(e.target.value === '' ? null : e.target.value === 'yes'); setCurrentPage(0); }}
-                  className={`rounded-full border py-1 text-xs font-semibold outline-none transition ${filterAllergies !== null ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterAllergies !== null ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
                   <option value="">Allergies</option>
                   <option value="yes">Has allergies</option>
@@ -720,7 +708,7 @@ export default function AdminPage() {
               </div>
 
               {hasFilters && (
-                <button onClick={clearAllFilters} className="text-xs font-medium text-sky-600 hover:text-sky-800 transition">
+                <button onClick={clearAllFilters} className="text-sm font-medium text-sky-600 hover:text-sky-800 transition">
                   Clear all
                 </button>
               )}
@@ -732,19 +720,19 @@ export default function AdminPage() {
           )}
 
           {registrations.length > 0 && (
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-base">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-slate-200 bg-slate-50 text-sm font-semibold uppercase tracking-wider text-slate-500">
                   {[
                     { key: 'date', label: 'Date', sortable: true },
-                    { key: 'parent', label: 'Parent', sortable: true },
-                    { key: 'email', label: 'Email', sortable: true },
-                    { key: 'phone', label: 'Phone', sortable: true },
-                    { key: 'child', label: 'Child', sortable: false },
                     { key: 'grade', label: 'Grade', sortable: true },
-                    { key: 'gender', label: 'Gender', sortable: true },
+                    { key: 'child', label: 'Child', sortable: true },
+                    { key: 'tshirt', label: 'T-Shirt', sortable: true },
                     { key: 'dob', label: 'DOB', sortable: true },
-                    { key: 'tshirt', label: 'T-Shirt', sortable: false },
+                    { key: 'gender', label: 'Gender', sortable: true },
+                    { key: 'parent', label: 'Parent', sortable: true },
+                    { key: 'phone', label: 'Mobile', sortable: true },
+                    { key: 'email', label: 'Email', sortable: true },
                     { key: 'allergies', label: 'Allergies', sortable: false },
                     { key: 'friend', label: 'Friend', sortable: false },
                     { key: 'phase', label: 'Phase', sortable: false },
@@ -752,7 +740,7 @@ export default function AdminPage() {
                   ].map((col) => (
                     <th
                       key={col.key}
-                      className={`px-2.5 py-3 ${col.sortable ? 'cursor-pointer select-none hover:text-slate-700' : ''}`}
+                      className={`px-1.5 py-1.5 ${col.sortable ? 'cursor-pointer select-none hover:text-slate-700' : ''}`}
                       onClick={col.sortable ? () => handleSort(col.key) : undefined}
                     >
                       <span className="inline-flex items-center gap-1">
@@ -767,52 +755,48 @@ export default function AdminPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="px-2.5 py-3 text-right">Price</th>
+                  <th className="px-1.5 py-1.5 text-right">Price</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedRows.map(({ reg, child, idx }) => (
                   <tr key={`${reg.id}-${idx}`} className="cursor-pointer hover:bg-slate-50" onClick={() => setDrawerRegId(reg.id)}>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">
-                      {idx === 0 ? new Date(reg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">
+                      {new Date(reg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2 font-medium text-slate-900">
-                      {idx === 0 ? reg.parent_name : ''}
-                    </td>
-                    <td className="px-2.5 py-2 text-slate-500">
-                      {idx === 0 ? reg.email : ''}
-                    </td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">
-                      {idx === 0 ? formatPhone(reg.phone_number) : ''}
-                    </td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-900">
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">{child.grade}</td>
+                    <td className="whitespace-nowrap px-1.5 py-1 font-medium text-slate-900">
                       {child.first_name} {child.last_name}
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">{child.grade}</td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">{child.gender === 'Female' ? 'F' : child.gender === 'Male' ? 'M' : child.gender}</td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">{formatDob(child.date_of_birth)}</td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-slate-500">{child.tshirt_size}</td>
-                    <td className="max-w-[150px] truncate px-2.5 py-2 text-slate-500" title={child.allergy_information ?? ''}>
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">{child.tshirt_size}</td>
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">{formatDob(child.date_of_birth)}</td>
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">{child.gender === 'Female' ? 'F' : child.gender === 'Male' ? 'M' : child.gender}</td>
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">
+                      {reg.parent_name}
+                    </td>
+                    <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">
+                      {formatPhone(reg.phone_number)}
+                    </td>
+                    <td className="px-1.5 py-1 text-slate-500">
+                      {reg.email}
+                    </td>
+                    <td className="max-w-[150px] truncate px-1.5 py-1 text-slate-500" title={child.allergy_information ?? ''}>
                       {child.allergy_information || '—'}
                     </td>
-                    <td className="max-w-[120px] truncate px-2.5 py-2 text-slate-500" title={child.medical_notes ?? ''}>
+                    <td className="max-w-[120px] truncate px-1.5 py-1 text-slate-500" title={child.medical_notes ?? ''}>
                       {child.medical_notes || '—'}
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2">
-                      {idx === 0 && (
-                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                          {reg.registration_phase === 'early' ? 'Early' : 'Regular'}
-                        </span>
-                      )}
+                    <td className="whitespace-nowrap px-1.5 py-1">
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                        {reg.registration_phase === 'early' ? 'Early' : 'Regular'}
+                      </span>
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2">
-                      {idx === 0 && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                          {reg.payment_status}
-                        </span>
-                      )}
+                    <td className="whitespace-nowrap px-1.5 py-1">
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        {reg.payment_status}
+                      </span>
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2 text-right font-medium text-slate-900">
+                    <td className="whitespace-nowrap px-1.5 py-1 text-right font-medium text-slate-900">
                       {formatCurrency(child.price)}
                     </td>
                   </tr>
