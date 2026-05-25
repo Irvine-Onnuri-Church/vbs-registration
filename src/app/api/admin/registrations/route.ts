@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getAdminDb } from '@/lib/firebase';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -11,14 +11,20 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  const { data, error } = await getSupabaseAdmin()
-    .from('registrations')
-    .select('*, children(*)')
-    .order('created_at', { ascending: false });
+  try {
+    const snapshot = await getAdminDb()
+      .collection('registrations')
+      .orderBy('created_at', 'desc')
+      .get();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const registrations = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return NextResponse.json({ registrations });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ registrations: data });
 }

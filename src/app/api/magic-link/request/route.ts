@@ -3,24 +3,22 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 import { EVENT_INFO } from '@/lib/constants';
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getAdminDb } from '@/lib/firebase';
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
     if (!email) return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
 
-    const supabase = getSupabaseAdmin();
-
     // Check if any registration exists for this email
-    const { data: registrations } = await supabase
-      .from('registrations')
-      .select('id')
-      .eq('email', email.toLowerCase().trim())
-      .limit(1);
+    const snapshot = await getAdminDb()
+      .collection('registrations')
+      .where('email', '==', email.toLowerCase().trim())
+      .limit(1)
+      .get();
 
     // Always respond with success to avoid email enumeration
-    if (!registrations || registrations.length === 0) {
+    if (snapshot.empty) {
       return NextResponse.json({ success: true });
     }
 
@@ -28,7 +26,7 @@ export async function POST(request: Request) {
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    await supabase.from('magic_links').insert({
+    await getAdminDb().collection('magic_links').add({
       token,
       email: email.toLowerCase().trim(),
       expires_at: expiresAt.toISOString(),

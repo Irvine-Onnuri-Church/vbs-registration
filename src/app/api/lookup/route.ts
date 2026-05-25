@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { supabase } from '@/lib/supabase';
+import { getAdminDb } from '@/lib/firebase';
 
 export async function POST(request: Request) {
   try {
@@ -10,18 +10,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and registration ID are required.' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('registrations')
-      .select('*, children(*)')
-      .eq('id', registrationId.trim())
-      .eq('email', email.trim().toLowerCase())
-      .single();
+    const doc = await getAdminDb().collection('registrations').doc(registrationId.trim()).get();
 
-    if (error || !data) {
+    if (!doc.exists) {
       return NextResponse.json({ error: 'No registration found. Please check your email and registration ID.' }, { status: 404 });
     }
 
-    return NextResponse.json({ registration: data });
+    const data = doc.data()!;
+    if (data.email !== email.trim().toLowerCase()) {
+      return NextResponse.json({ error: 'No registration found. Please check your email and registration ID.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ registration: { id: doc.id, ...data } });
   } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

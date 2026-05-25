@@ -7,7 +7,6 @@ import { EVENT_INFO } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 
 type Child = {
-  id: string;
   first_name: string;
   last_name: string;
   grade: string;
@@ -129,8 +128,8 @@ export default function MyPageClient({ token }: { token: string | null }) {
                 <h2 className="font-semibold text-slate-900">Registered Children</h2>
               </div>
               <div className="divide-y divide-slate-100">
-                {allChildren.map((child) => (
-                  <div key={child.id} className="flex items-center justify-between px-6 py-4">
+                {allChildren.map((child, idx) => (
+                  <div key={`${child.reg.id}-${idx}`} className="flex items-center justify-between px-6 py-4">
                     <div>
                       <p className="font-semibold text-slate-900">{child.first_name} {child.last_name}</p>
                       <p className="text-sm text-slate-500">{child.grade} · T-shirt: {child.tshirt_size}</p>
