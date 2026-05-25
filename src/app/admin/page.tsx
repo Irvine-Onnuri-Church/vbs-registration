@@ -256,7 +256,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 outerRadius={100}
                 paddingAngle={4}
                 dataKey="value"
-                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
               >
                 <Cell fill="#0284c7" />
                 <Cell fill="#f59e0b" />
@@ -283,7 +283,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 outerRadius={100}
                 paddingAngle={4}
                 dataKey="value"
-                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
               >
                 {genderData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -371,8 +371,9 @@ export default function AdminPage() {
     }
     if (filterGrade && child.grade !== filterGrade) return false;
     if (filterTshirt && child.tshirt_size !== filterTshirt) return false;
-    if (filterAllergies === true && !child.allergy_information) return false;
-    if (filterAllergies === false && child.allergy_information) return false;
+    const hasAllergies = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
+    if (filterAllergies === true && !hasAllergies) return false;
+    if (filterAllergies === false && hasAllergies) return false;
     if (filterGender && child.gender !== filterGender) return false;
     if (filterPhase) {
       if (filterPhase === 'early' && reg.registration_phase !== 'early') return false;
