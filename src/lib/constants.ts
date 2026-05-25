@@ -55,7 +55,3 @@ export const EVENT_DETAILS = [
   { label: 'Location', value: `${EVENT_INFO.location} — ${EVENT_INFO.address}` },
 ];
 
-export const NAV_LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/mypage', label: 'My Registration' },
-];

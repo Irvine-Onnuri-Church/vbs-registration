@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import Link from 'next/link';
 
 import PageContainer from '@/components/PageContainer';
 import { EVENT_INFO } from '@/lib/constants';
@@ -314,6 +314,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -322,7 +323,11 @@ export default function AdminPage() {
   const [dataError, setDataError] = useState('');
   const [dataLoading, setDataLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'table' | 'analytics'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'table' | 'analytics'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    const param = new URLSearchParams(window.location.search).get('view');
+    return (['table', 'list', 'analytics'].includes(param || '') ? param : 'table') as 'table' | 'list' | 'analytics';
+  });
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [pageSize, setPageSize] = useState<number>(25);
@@ -336,12 +341,7 @@ export default function AdminPage() {
   const [filterPhase, setFilterPhase] = useState<string | null>(null);
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filterPayment, setFilterPayment] = useState<string | null>(null);
-  const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
   const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase || filterSource || filterPayment;
-
-  useEffect(() => {
-    setNavSlot(document.getElementById('navbar-trailing-slot'));
-  }, []);
 
   function clearAllFilters() {
     setSearchQuery('');
@@ -432,18 +432,19 @@ export default function AdminPage() {
   })();
 
   useEffect(() => {
-    // Check if cookie already set from previous session
     checkSession();
   }, []);
 
   async function checkSession() {
-    const res = await fetch('/api/admin/registrations');
-    if (res.ok) {
-      const data = await res.json();
-      setRegistrations(data.registrations);
-      setAuthenticated(true);
+    try {
+      const res = await fetch('/api/admin/auth');
+      if (res.ok) {
+        setAuthenticated(true);
+        fetchRegistrations();
+      }
+    } finally {
+      setCheckingSession(false);
     }
-    // If 401, just show login — no error needed
   }
 
   async function fetchRegistrations() {
@@ -484,13 +485,6 @@ export default function AdminPage() {
     await fetchRegistrations();
   }
 
-  async function handleLogout() {
-    await fetch('/api/admin/auth', { method: 'DELETE' });
-    setAuthenticated(false);
-    setRegistrations([]);
-    setPassword('');
-  }
-
   const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled));
   const activeRegistrations = registrations.filter((r) => r.children.some((c) => !c.canceled));
   const totalAmount = activeRegistrations.reduce((sum, r) => {
@@ -508,6 +502,15 @@ export default function AdminPage() {
     },
     {} as Record<string, number>,
   );
+
+  // ── Checking session ──
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600" />
+      </div>
+    );
+  }
 
   // ── Login screen ──
   if (!authenticated) {
@@ -556,15 +559,6 @@ export default function AdminPage() {
   // ── Dashboard ──
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-10 sm:px-6 lg:px-8 space-y-8">
-      {navSlot && createPortal(
-        <button
-          onClick={handleLogout}
-          className="inline-flex rounded-full px-3 py-1.5 text-xs font-medium text-blue-100 transition hover:bg-orange-500 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
-        >
-          Sign Out
-        </button>,
-        navSlot,
-      )}
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>
@@ -608,8 +602,8 @@ export default function AdminPage() {
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">View as</span>
           <div className="flex gap-1 rounded-full bg-slate-100 p-1">
             {([
-              { key: 'list', label: 'List' },
               { key: 'table', label: 'Table' },
+              { key: 'list', label: 'List' },
               { key: 'analytics', label: 'Analytics' },
             ] as const).map(({ key, label }) => (
               <button
