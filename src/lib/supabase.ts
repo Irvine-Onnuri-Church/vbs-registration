@@ -1,3 +1,9 @@
+// ============================================================
+// DEPRECATED — This file is no longer used by the application.
+// The app has been migrated to Firebase Firestore (see firebase.ts).
+// Keeping this file for reference in case a rollback to Supabase is needed.
+// ============================================================
+
 import { createClient } from '@supabase/supabase-js'
 
 export const supabase = createClient(

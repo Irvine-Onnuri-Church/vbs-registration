@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 
-import { supabase } from '@/lib/supabase';
+import { getAdminDb } from '@/lib/firebase';
 import { EVENT_INFO } from '@/lib/constants';
 import { calculateChildPrice, formatCurrency } from '@/lib/utils';
 
@@ -97,32 +97,7 @@ export async function POST(request: Request) {
       return sum + calculateChildPrice(child.grade, earlyRegistration);
     }, 0);
 
-    const { data: registration, error: regError } = await supabase
-      .from('registrations')
-      .insert({
-        parent_name: parentInfo.parentName,
-        email: parentInfo.email.toLowerCase().trim(),
-        phone_number: parentInfo.phoneNumber,
-        emergency_contact_name: parentInfo.emergencyContactName,
-        emergency_contact_phone: parentInfo.emergencyContactPhoneNumber,
-        photo_consent: photoConsent,
-        liability_acknowledgment: liabilityAcknowledgment,
-        paypal_order_id: paypalOrderId,
-        paypal_capture_id: paypalCaptureId ?? null,
-        payment_status: 'completed',
-        payment_time: paymentTime ?? null,
-        total_amount: totalAmount,
-        registration_phase: registrationPhase,
-      })
-      .select('id')
-      .single();
-
-    if (regError) {
-      return NextResponse.json({ error: regError.message }, { status: 500 });
-    }
-
     const childRows = children.map((child: ChildInput) => ({
-      registration_id: registration.id,
       first_name: child.firstName,
       last_name: child.lastName,
       preferred_name: child.preferredName || null,
@@ -136,11 +111,25 @@ export async function POST(request: Request) {
       price: calculateChildPrice(child.grade, earlyRegistration),
     }));
 
-    const { error: childrenError } = await supabase.from('children').insert(childRows);
+    const docRef = await getAdminDb().collection('registrations').add({
+      parent_name: parentInfo.parentName,
+      email: parentInfo.email.toLowerCase().trim(),
+      phone_number: parentInfo.phoneNumber,
+      emergency_contact_name: parentInfo.emergencyContactName,
+      emergency_contact_phone: parentInfo.emergencyContactPhoneNumber,
+      photo_consent: photoConsent,
+      liability_acknowledgment: liabilityAcknowledgment,
+      paypal_order_id: paypalOrderId,
+      paypal_capture_id: paypalCaptureId ?? null,
+      payment_status: 'completed',
+      payment_time: paymentTime ?? null,
+      total_amount: totalAmount,
+      registration_phase: registrationPhase,
+      created_at: new Date().toISOString(),
+      children: childRows,
+    });
 
-    if (childrenError) {
-      return NextResponse.json({ error: childrenError.message }, { status: 500 });
-    }
+    const registration = { id: docRef.id };
 
     // Send confirmation email (non-blocking — don't fail registration if email fails)
     try {
