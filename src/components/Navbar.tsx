@@ -5,7 +5,7 @@ import { EVENT_INFO, NAV_LINKS } from '@/lib/constants';
 export default function Navbar() {
   return (
     <header className="bg-[#0f1e5e] shadow-lg">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="min-w-0 shrink">
           <p className="truncate text-sm font-bold tracking-tight text-white sm:text-lg">{EVENT_INFO.name}</p>
           <p className="text-xs text-blue-300">🏰 {EVENT_INFO.subtitle}</p>

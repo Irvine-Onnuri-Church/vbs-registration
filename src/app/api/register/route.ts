@@ -106,6 +106,7 @@ export async function POST(request: Request) {
       allergy_information: child.allergyInformation || null,
       medical_notes: child.medicalNotes || null,
       price: calculateChildPrice(child.grade, earlyRegistration),
+      canceled: false,
     }));
 
     const docRef = await getAdminDb().collection('registrations').add({

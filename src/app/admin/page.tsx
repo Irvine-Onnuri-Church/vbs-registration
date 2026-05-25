@@ -38,6 +38,8 @@ type Child = {
   allergy_information: string | null;
   medical_notes: string | null;
   price: number;
+  class?: 'regular' | 'beginner' | 'appletree';
+  canceled?: boolean;
 };
 
 type Registration = {
@@ -52,6 +54,7 @@ type Registration = {
   registration_phase: string;
   payment_status: string;
   paypal_order_id: string | null;
+  source?: string;
   created_at: string;
   children: Child[];
 };
@@ -291,7 +294,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
 
         {/* T-shirt size */}
         <div className={cardClass}>
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">T-Shirt Size</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">T-Shirt Size — {tshirtData.reduce((sum, d) => sum + d.count, 0)}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={tshirtData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -331,8 +334,10 @@ export default function AdminPage() {
   const [filterAllergies, setFilterAllergies] = useState<boolean | null>(null);
   const [filterGender, setFilterGender] = useState<string | null>(null);
   const [filterPhase, setFilterPhase] = useState<string | null>(null);
+  const [filterSource, setFilterSource] = useState<string | null>(null);
+  const [filterPayment, setFilterPayment] = useState<string | null>(null);
   const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
-  const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase;
+  const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase || filterSource || filterPayment;
 
   useEffect(() => {
     setNavSlot(document.getElementById('navbar-trailing-slot'));
@@ -345,6 +350,8 @@ export default function AdminPage() {
     setFilterAllergies(null);
     setFilterGender(null);
     setFilterPhase(null);
+    setFilterSource(null);
+    setFilterPayment(null);
     setCurrentPage(0);
   }
 
@@ -380,6 +387,11 @@ export default function AdminPage() {
       if (filterPhase === 'early' && reg.registration_phase !== 'early') return false;
       if (filterPhase === 'regular' && reg.registration_phase === 'early') return false;
     }
+    if (filterSource) {
+      const src = reg.source || 'online';
+      if (src !== filterSource) return false;
+    }
+    if (filterPayment && reg.payment_status !== filterPayment) return false;
     return true;
   });
 
@@ -479,8 +491,23 @@ export default function AdminPage() {
     setPassword('');
   }
 
-  const totalAmount = registrations.reduce((sum, r) => sum + r.total_amount, 0);
-  const totalChildren = registrations.reduce((sum, r) => sum + r.children.length, 0);
+  const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled));
+  const activeRegistrations = registrations.filter((r) => r.children.some((c) => !c.canceled));
+  const totalAmount = activeRegistrations.reduce((sum, r) => {
+    const activeTotal = r.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0);
+    return sum + activeTotal;
+  }, 0);
+  const totalChildren = activeChildren.length;
+
+  // Class breakdown (fallback: Pre-K → beginner, else regular if class not set)
+  const classCounts = activeChildren.reduce(
+    (acc, c) => {
+      const cls = c.class ?? (c.grade === 'Pre-K' ? 'beginner' : 'regular');
+      acc[cls] = (acc[cls] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // ── Login screen ──
   if (!authenticated) {
@@ -528,11 +555,11 @@ export default function AdminPage() {
 
   // ── Dashboard ──
   return (
-    <div className={`mx-auto w-full px-4 py-10 sm:px-6 lg:px-8 ${viewMode === 'table' ? 'max-w-[1800px]' : viewMode === 'analytics' ? 'max-w-7xl' : 'max-w-6xl'} space-y-8`}>
+    <div className="mx-auto w-full max-w-[1800px] px-4 py-10 sm:px-6 lg:px-8 space-y-8">
       {navSlot && createPortal(
         <button
           onClick={handleLogout}
-          className="inline-flex rounded-full bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-md transition hover:bg-orange-400 sm:px-5 sm:py-2 sm:text-sm"
+          className="inline-flex rounded-full px-3 py-1.5 text-xs font-medium text-blue-100 transition hover:bg-orange-500 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
         >
           Sign Out
         </button>,
@@ -541,22 +568,37 @@ export default function AdminPage() {
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>
-        <p className="text-sm text-slate-500">{EVENT_INFO.church} {EVENT_INFO.name} — {EVENT_INFO.subtitle}</p>
       </div>
 
       {/* Summary stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Total Registrations</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{registrations.length}</p>
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+          <div className="p-6">
+            <p className="text-sm font-semibold text-slate-500">Registrations</p>
+            <p className="mt-1 text-3xl font-bold text-slate-900">{activeRegistrations.length}</p>
+          </div>
+          <div className="p-6">
+            <p className="text-sm font-semibold text-slate-500">Children</p>
+            <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
+          </div>
+          <div className="rounded-none bg-[#0f1e5e] p-6">
+            <p className="text-sm font-semibold text-blue-300">Collected</p>
+            <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
+          </div>
         </div>
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-500">Total Children</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
-        </div>
-        <div className="rounded-3xl bg-[#0f1e5e] p-6 shadow-sm">
-          <p className="text-sm text-blue-300">Total Collected</p>
-          <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
+        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 border-t border-slate-200">
+          <div className="flex items-center justify-between p-5 px-6">
+            <p className="text-sm font-semibold text-slate-500">Regular VBS</p>
+            <p className="text-2xl font-bold text-slate-900">{classCounts.regular || 0}</p>
+          </div>
+          <div className="flex items-center justify-between p-5 px-6">
+            <p className="text-sm font-semibold text-slate-500">Beginner VBS</p>
+            <p className="text-2xl font-bold text-slate-900">{classCounts.beginner || 0}</p>
+          </div>
+          <div className="flex items-center justify-between p-5 px-6">
+            <p className="text-sm font-semibold text-slate-500">Apple Tree</p>
+            <p className="text-2xl font-bold text-slate-900">{classCounts.appletree || 0}</p>
+          </div>
         </div>
       </div>
 
@@ -688,6 +730,43 @@ export default function AdminPage() {
                 </select>
                 {filterPhase && (
                   <button onClick={() => { setFilterPhase(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Source */}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={filterSource ?? ''}
+                  onChange={(e) => { setFilterSource(e.target.value || null); setCurrentPage(0); }}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterSource ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                >
+                  <option value="">Source</option>
+                  <option value="online">Online</option>
+                  <option value="in_person">In Person</option>
+                </select>
+                {filterSource && (
+                  <button onClick={() => { setFilterSource(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Payment Status */}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={filterPayment ?? ''}
+                  onChange={(e) => { setFilterPayment(e.target.value || null); setCurrentPage(0); }}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterPayment ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                >
+                  <option value="">Payment</option>
+                  {[...new Set(registrations.map((r) => r.payment_status))].sort().map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {filterPayment && (
+                  <button onClick={() => { setFilterPayment(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
                     <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 )}
