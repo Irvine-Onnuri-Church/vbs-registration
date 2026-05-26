@@ -95,8 +95,8 @@ const CHART_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#e
 function GraphsView({ registrations }: { registrations: Registration[] }) {
   const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  // All children flattened
-  const allChildren = registrations.flatMap((r) => r.children);
+  // All children flattened (exclude appletree)
+  const allChildren = registrations.flatMap((r) => r.children.filter((c) => c.class !== 'appletree'));
 
   // ── 1. Signups over time ──
   const timelineData = (() => {
@@ -116,7 +116,8 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
       } else {
         key = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       }
-      map.set(key, (map.get(key) ?? 0) + r.children.length);
+      const nonAppletree = r.children.filter((c) => c.class !== 'appletree').length;
+      if (nonAppletree > 0) map.set(key, (map.get(key) ?? 0) + nonAppletree);
     });
     // Sort chronologically (earliest first)
     const sorted = Array.from(map.entries()).sort((a, b) => {
@@ -341,7 +342,8 @@ export default function AdminPage() {
   const [filterPhase, setFilterPhase] = useState<string | null>(null);
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filterPayment, setFilterPayment] = useState<string | null>(null);
-  const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase || filterSource || filterPayment;
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const hasFilters = searchQuery || filterGrade || filterTshirt || filterAllergies !== null || filterGender || filterPhase || filterSource || filterPayment || filterType;
 
   function clearAllFilters() {
     setSearchQuery('');
@@ -352,6 +354,7 @@ export default function AdminPage() {
     setFilterPhase(null);
     setFilterSource(null);
     setFilterPayment(null);
+    setFilterType(null);
     setCurrentPage(0);
   }
 
@@ -364,9 +367,11 @@ export default function AdminPage() {
     }
   }
 
-  // Build flat rows for table view, filter, then sort
+  // Build flat rows for table view, filter, then sort (exclude appletree and canceled)
   const allTableRows = registrations.flatMap((reg) =>
-    reg.children.map((child, idx) => ({ reg, child, idx }))
+    reg.children
+      .map((child, idx) => ({ reg, child, idx }))
+      .filter(({ child }) => !child.canceled && child.class !== 'appletree')
   );
 
   const filteredRows = allTableRows.filter(({ reg, child }) => {
@@ -392,6 +397,11 @@ export default function AdminPage() {
       if (src !== filterSource) return false;
     }
     if (filterPayment && reg.payment_status !== filterPayment) return false;
+    if (filterType) {
+      const cls = child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular');
+      if (filterType === 'regular' && cls !== 'regular') return false;
+      if (filterType === 'beginner' && cls !== 'beginner') return false;
+    }
     return true;
   });
 
@@ -419,8 +429,8 @@ export default function AdminPage() {
   const totalPages = pageSize === 0 ? 1 : Math.ceil(totalRows / pageSize);
   const paginatedRows = pageSize === 0 ? filteredRows : filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
-  // Unique values for filter dropdowns
-  const allChildren = registrations.flatMap((r) => r.children);
+  // Unique values for filter dropdowns (exclude appletree)
+  const allChildren = registrations.flatMap((r) => r.children.filter((c) => c.class !== 'appletree'));
   const gradeOptions = [...new Set(allChildren.map((c) => c.grade))].sort();
   const tshirtOptions = (() => {
     const order = ['3Y', '4Y', '5Y', 'XS', 'S', 'M', 'L', 'XL', 'Adult S', 'Adult M', 'Adult L', 'Adult XL'];
@@ -485,13 +495,14 @@ export default function AdminPage() {
     await fetchRegistrations();
   }
 
-  const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled));
-  const activeRegistrations = registrations.filter((r) => r.children.some((c) => !c.canceled));
+  const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled && c.class !== 'appletree'));
+  const activeRegistrations = registrations.filter((r) => r.children.some((c) => !c.canceled && c.class !== 'appletree'));
   const totalAmount = activeRegistrations.reduce((sum, r) => {
-    const activeTotal = r.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0);
+    const activeTotal = r.children.filter((c) => !c.canceled && c.class !== 'appletree').reduce((s, c) => s + c.price, 0);
     return sum + activeTotal;
   }, 0);
   const totalChildren = activeChildren.length;
+  const appletreeCount = registrations.flatMap((r) => r.children.filter((c) => !c.canceled && c.class === 'appletree')).length;
 
   // Class breakdown (fallback: Pre-K → beginner, else regular if class not set)
   const classCounts = activeChildren.reduce(
@@ -581,18 +592,18 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 border-t border-slate-200">
-          <div className="flex items-center justify-between p-5 px-6">
+          <button onClick={() => { setFilterType(filterType === 'regular' ? null : 'regular'); setViewMode('table'); setCurrentPage(0); }} className={`flex items-center justify-between p-5 px-6 transition hover:bg-slate-50 ${filterType === 'regular' ? 'bg-sky-50 ring-2 ring-inset ring-sky-300' : ''}`}>
             <p className="text-sm font-semibold text-slate-500">Regular VBS</p>
             <p className="text-2xl font-bold text-slate-900">{classCounts.regular || 0}</p>
-          </div>
-          <div className="flex items-center justify-between p-5 px-6">
+          </button>
+          <button onClick={() => { setFilterType(filterType === 'beginner' ? null : 'beginner'); setViewMode('table'); setCurrentPage(0); }} className={`flex items-center justify-between p-5 px-6 transition hover:bg-slate-50 ${filterType === 'beginner' ? 'bg-sky-50 ring-2 ring-inset ring-sky-300' : ''}`}>
             <p className="text-sm font-semibold text-slate-500">Beginner VBS</p>
             <p className="text-2xl font-bold text-slate-900">{classCounts.beginner || 0}</p>
-          </div>
-          <div className="flex items-center justify-between p-5 px-6">
+          </button>
+          <Link href="/admin/appletree" className="flex items-center justify-between p-5 px-6 transition hover:bg-slate-50">
             <p className="text-sm font-semibold text-slate-500">Apple Tree</p>
-            <p className="text-2xl font-bold text-slate-900">{classCounts.appletree || 0}</p>
-          </div>
+            <p className="text-2xl font-bold text-slate-900">{appletreeCount}</p>
+          </Link>
         </div>
       </div>
 
@@ -671,6 +682,24 @@ export default function AdminPage() {
                 </select>
                 {filterGrade && (
                   <button onClick={() => { setFilterGrade(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Type */}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={filterType ?? ''}
+                  onChange={(e) => { setFilterType(e.target.value || null); setCurrentPage(0); }}
+                  className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterType ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
+                >
+                  <option value="">Type</option>
+                  <option value="regular">Regular VBS</option>
+                  <option value="beginner">Beginner VBS</option>
+                </select>
+                {filterType && (
+                  <button onClick={() => { setFilterType(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
                     <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 )}
@@ -959,7 +988,9 @@ export default function AdminPage() {
           )}
 
           <div className="divide-y divide-slate-100">
-            {registrations.map((reg) => (
+            {registrations.filter((r) => r.children.some((c) => c.class !== 'appletree')).map((reg) => {
+              const visibleChildren = reg.children.filter((c) => c.class !== 'appletree');
+              return (
               <div key={reg.id}>
                 {/* Row */}
                 <button
@@ -979,7 +1010,7 @@ export default function AdminPage() {
                       </div>
                       <p className="mt-0.5 text-sm text-slate-500">{reg.email} · {formatPhone(reg.phone_number)}</p>
                       <p className="text-xs text-slate-400">
-                        {reg.children.length} child{reg.children.length !== 1 ? 'ren' : ''} ·{' '}
+                        {visibleChildren.length} child{visibleChildren.length !== 1 ? 'ren' : ''} ·{' '}
                         {new Date(reg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
@@ -1014,7 +1045,7 @@ export default function AdminPage() {
                       {/* Children */}
                       <div className="space-y-3">
                         <p className="text-sm font-semibold text-slate-700">Children</p>
-                        {reg.children.map((child, idx) => (
+                        {visibleChildren.map((child, idx) => (
                           <div key={`${reg.id}-child-${idx}`} className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
                             <div className="flex items-start justify-between gap-2">
                               <div>
@@ -1056,7 +1087,8 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

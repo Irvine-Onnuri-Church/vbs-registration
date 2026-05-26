@@ -331,7 +331,7 @@ export default function CheckInPage() {
           <table className="w-full text-left text-base">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/60">
-                {['Child', 'Parent', 'Grade', 'T-Shirt', 'Allergies', ''].map((col) => (
+                {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies', ''].map((col) => (
                   <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                     {col}
                   </th>
@@ -341,7 +341,7 @@ export default function CheckInPage() {
             <tbody>
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">
                     {searchQuery ? 'No children match your search.' : 'No children found.'}
                   </td>
                 </tr>
@@ -364,6 +364,13 @@ export default function CheckInPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{reg.parent_name}</td>
                     <td className="px-4 py-3 text-slate-600">{child.grade}</td>
+                    <td className="px-4 py-3">
+                      {child.class === 'appletree' ? (
+                        <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Apple Tree</span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{child.tshirt_size}</td>
                     <td className="px-4 py-3">
                       {hasAllergy ? (
