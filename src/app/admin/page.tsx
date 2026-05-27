@@ -94,9 +94,23 @@ const CHART_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#e
 
 function GraphsView({ registrations }: { registrations: Registration[] }) {
   const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [classFilter, setClassFilter] = useState<'total' | 'regular' | 'beginner' | 'appletree'>('total');
 
-  // All children flattened (exclude appletree)
-  const allChildren = registrations.flatMap((r) => r.children.filter((c) => c.class !== 'appletree'));
+  const classFilterTabs = [
+    { key: 'total' as const, label: 'Total' },
+    { key: 'regular' as const, label: 'Regular VBS' },
+    { key: 'beginner' as const, label: 'Beginner VBS' },
+    { key: 'appletree' as const, label: 'Apple Tree' },
+  ];
+
+  const matchesClassFilter = (c: { class?: string; grade: string }) => {
+    if (classFilter === 'total') return true;
+    const cls = c.class ?? (c.grade === 'Pre-K' ? 'beginner' : 'regular');
+    return cls === classFilter;
+  };
+
+  // All children flattened, filtered by class
+  const allChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled && matchesClassFilter(c)));
 
   // ── 1. Signups over time ──
   const timelineData = (() => {
@@ -116,8 +130,8 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
       } else {
         key = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       }
-      const nonAppletree = r.children.filter((c) => c.class !== 'appletree').length;
-      if (nonAppletree > 0) map.set(key, (map.get(key) ?? 0) + nonAppletree);
+      const filtered = r.children.filter((c) => !c.canceled && matchesClassFilter(c)).length;
+      if (filtered > 0) map.set(key, (map.get(key) ?? 0) + filtered);
     });
     // Sort chronologically (earliest first)
     const sorted = Array.from(map.entries()).sort((a, b) => {
@@ -154,7 +168,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
     let early = 0;
     let regular = 0;
     registrations.forEach((r) => {
-      const count = r.children.length;
+      const count = r.children.filter((c) => !c.canceled && matchesClassFilter(c)).length;
       if (r.registration_phase === 'early') early += count;
       else regular += count;
     });
@@ -189,6 +203,21 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
 
   return (
     <div className="space-y-6">
+      {/* Class filter tabs */}
+      <div className="flex gap-1 rounded-full bg-slate-100 p-1 w-fit">
+        {classFilterTabs.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setClassFilter(key)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              classFilter === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Signups over time */}
       <div className={cardClass}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

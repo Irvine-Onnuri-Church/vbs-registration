@@ -1,0 +1,70 @@
+{
+  "supabase": {
+    "id": "c719cd5a-aefb-4c74-9c80-7482041fec05",
+    "parent_name": "Jane Jeong Eun Park",
+    "email": "janepshin@gmail.com",
+    "phone_number": "9512335568",
+    "emergency_contact_name": "Joseph Shin",
+    "emergency_contact_phone": "9095560316",
+    "photo_consent": true,
+    "total_amount": 90,
+    "registration_phase": "regular",
+    "payment_status": "completed",
+    "created_at": "2026-05-26T14:38:33.562514+00:00",
+    "liability_acknowledgment": true,
+    "paypal_order_id": "17E823797Y8144935",
+    "paypal_capture_id": null,
+    "payment_time": null,
+    "children": [
+      {
+        "id": "780f2176-5523-481b-9ca0-bf6a77986d92",
+        "age": 6,
+        "grade": "Kindergarten",
+        "price": 90,
+        "gender": "Female",
+        "last_name": "Shin",
+        "first_name": "Joo-Ah",
+        "tshirt_size": "M",
+        "date_of_birth": "2020-01-30",
+        "medical_notes": "Elisha Kim\nYuna Jin\n(She is finishing Kinder grade this June)",
+        "preferred_name": null,
+        "registration_id": "c719cd5a-aefb-4c74-9c80-7482041fec05",
+        "allergy_information": "She has to wear a hat whenever she is outside to protect her birthmark on her face."
+      }
+    ]
+  },
+  "firestore": {
+    "parent_name": "Jane Jeong Eun Park",
+    "email": "janepshin@gmail.com",
+    "phone_number": "(951) 233-5568",
+    "emergency_contact_name": "Joseph Shin",
+    "emergency_contact_phone": "(909) 556-0316",
+    "photo_consent": true,
+    "liability_acknowledgment": true,
+    "paypal_order_id": "17E823797Y8144935",
+    "paypal_capture_id": null,
+    "payment_status": "completed",
+    "payment_time": null,
+    "total_amount": 90,
+    "registration_phase": "regular",
+    "created_at": "2026-05-26T14:38:33.562514+00:00",
+    "source": "online",
+    "children": [
+      {
+        "first_name": "Joo-Ah",
+        "last_name": "Shin",
+        "preferred_name": null,
+        "gender": "Female",
+        "date_of_birth": "2020-01-30",
+        "age": 6,
+        "grade": "Kindergarten",
+        "tshirt_size": "M",
+        "allergy_information": "She has to wear a hat whenever she is outside to protect her birthmark on her face.",
+        "medical_notes": "Elisha Kim\nYuna Jin\n(She is finishing Kinder grade this June)",
+        "price": 90,
+        "class": "regular",
+        "canceled": false
+      }
+    ]
+  }
+}

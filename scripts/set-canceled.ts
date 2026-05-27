@@ -21,6 +21,7 @@ function getDb() {
 // Children to cancel: [first_name, last_name, parent email or parent name]
 const TO_CANCEL = [
   { first_name: 'Laelle', last_name: 'Jeon', parent_email: 'imclaire7878@gmail.com' },
+  { first_name: 'Evan', last_name: 'Kang', parent_email: 'chrisjgy21@gmail.com' },
 ];
 
 async function run() {
