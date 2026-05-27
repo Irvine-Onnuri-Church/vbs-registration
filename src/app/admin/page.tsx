@@ -324,7 +324,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
 
         {/* T-shirt size */}
         <div className={cardClass}>
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">T-Shirt Size — {tshirtData.reduce((sum, d) => sum + d.count, 0)}</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">T-Shirt Size</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={tshirtData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
