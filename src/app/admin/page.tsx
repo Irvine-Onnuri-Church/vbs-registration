@@ -1149,7 +1149,7 @@ export default function AdminPage() {
                                   <p className="text-slate-600">Friend to be with: {child.medical_notes}</p>
                                 )}
                               </div>
-                              <span className="font-semibold text-slate-700">{formatCurrency(child.price)}</span>
+                              {filterType !== 'appletree' && <span className="font-semibold text-slate-700">{formatCurrency(child.price)}</span>}
                             </div>
                           </div>
                         ))}
