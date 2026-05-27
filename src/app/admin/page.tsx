@@ -58,25 +58,29 @@ type Registration = {
   children: Child[];
 };
 
-function downloadCSV(rows: { reg: Registration; child: Child }[]) {
-  const headers = [
-    'Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender',
-    'Parent Name', 'Mobile', 'Email',
-    'Allergies', 'Friend', 'Phase', 'Status', 'Price',
-    'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total',
-  ];
+function downloadCSV(rows: { reg: Registration; child: Child }[], isAppletree = false) {
+  const headers = isAppletree
+    ? ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies', 'Friend', 'Emergency Contact', 'Emergency Phone', 'Photo Consent']
+    : ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies', 'Friend', 'Phase', 'Status', 'Price', 'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total'];
 
   const formatDobCSV = (dob: string) => {
     const [year, month, day] = dob.split('-');
     return year && month && day ? `${month}-${day}-${year}` : dob;
   };
 
-  const csvRows = rows.map(({ reg, child }) => [
-    new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
-    reg.parent_name, formatPhone(reg.phone_number), reg.email,
-    child.allergy_information ?? '', child.medical_notes ?? '', reg.registration_phase, reg.payment_status, String(child.price),
-    reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.total_amount),
-  ]);
+  const csvRows = rows.map(({ reg, child }) => isAppletree
+    ? [
+        new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
+        reg.parent_name, formatPhone(reg.phone_number), reg.email,
+        child.allergy_information ?? '', child.medical_notes ?? '',
+        reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No',
+      ]
+    : [
+        new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
+        reg.parent_name, formatPhone(reg.phone_number), reg.email,
+        child.allergy_information ?? '', child.medical_notes ?? '', reg.registration_phase, reg.payment_status, String(child.price),
+        reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.total_amount),
+      ]);
 
   const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
   const csv = [headers, ...csvRows].map((row) => row.map(escape).join(',')).join('\n');
@@ -889,7 +893,7 @@ export default function AdminPage() {
               )}
             </div>
               <button
-                onClick={() => downloadCSV(filteredRows)}
+                onClick={() => downloadCSV(filteredRows, filterType === 'appletree')}
                 className="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -920,8 +924,10 @@ export default function AdminPage() {
                     { key: 'email', label: 'Email', sortable: true },
                     { key: 'allergies', label: 'Allergies', sortable: false },
                     { key: 'friend', label: 'Friend', sortable: false },
-                    { key: 'phase', label: 'Phase', sortable: false },
-                    { key: 'status', label: 'Status', sortable: false },
+                    ...(filterType === 'appletree' ? [] : [
+                      { key: 'phase', label: 'Phase', sortable: false },
+                      { key: 'status', label: 'Status', sortable: false },
+                    ]),
                   ].map((col) => (
                     <th
                       key={col.key}
@@ -940,7 +946,7 @@ export default function AdminPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="px-1.5 py-1.5 text-right">Price</th>
+                  {filterType !== 'appletree' && <th className="px-1.5 py-1.5 text-right">Price</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -971,19 +977,25 @@ export default function AdminPage() {
                     <td className="max-w-[120px] truncate px-1.5 py-1 text-slate-500" title={child.medical_notes ?? ''}>
                       {child.medical_notes || '—'}
                     </td>
-                    <td className="whitespace-nowrap px-1.5 py-1">
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                        {reg.registration_phase === 'early' ? 'Early' : 'Regular'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-1.5 py-1">
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                        {reg.payment_status}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-1.5 py-1 text-right font-medium text-slate-900">
-                      {formatCurrency(child.price)}
-                    </td>
+                    {filterType !== 'appletree' && (
+                      <td className="whitespace-nowrap px-1.5 py-1">
+                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                          {reg.registration_phase === 'early' ? 'Early' : 'Regular'}
+                        </span>
+                      </td>
+                    )}
+                    {filterType !== 'appletree' && (
+                      <td className="whitespace-nowrap px-1.5 py-1">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                          {reg.payment_status}
+                        </span>
+                      </td>
+                    )}
+                    {filterType !== 'appletree' && (
+                      <td className="whitespace-nowrap px-1.5 py-1 text-right font-medium text-slate-900">
+                        {formatCurrency(child.price)}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -1090,7 +1102,7 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-slate-900">{formatCurrency(reg.total_amount)}</span>
+                      {filterType !== 'appletree' && <span className="font-semibold text-slate-900">{formatCurrency(reg.total_amount)}</span>}
                       <svg
                         className={`h-4 w-4 text-slate-400 transition-transform ${expandedId === reg.id ? 'rotate-180' : ''}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
