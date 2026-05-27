@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 import PageContainer from '@/components/PageContainer';
 import { EVENT_INFO } from '@/lib/constants';
@@ -181,7 +180,10 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
   // ── 4. Gender ──
   const genderData = (() => {
     const map = new Map<string, number>();
-    allChildren.forEach((c) => map.set(c.gender, (map.get(c.gender) ?? 0) + 1));
+    allChildren.forEach((c) => {
+      const key = c.gender?.trim() || 'Unspecified';
+      map.set(key, (map.get(key) ?? 0) + 1);
+    });
     return Array.from(map.entries()).map(([gender, count]) => ({ name: gender, value: count }));
   })();
 
@@ -272,23 +274,34 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
         <div className={cardClass}>
           <h3 className="mb-4 text-lg font-semibold text-slate-900">Early Bird vs Regular</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+            <PieChart style={{ overflow: 'visible' }}>
               <Pie
                 data={phaseData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={48}
+                outerRadius={78}
                 paddingAngle={4}
                 dataKey="value"
-                label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                label={({ cx, cy, midAngle, outerRadius, name, value, percent, fill }: any) => {
+                  const RADIAN = Math.PI / 180;
+                  const r = outerRadius + 20;
+                  const x = cx + r * Math.cos(-midAngle * RADIAN);
+                  const y = cy + r * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text x={x} y={y} textAnchor={x > cx + 5 ? 'start' : x < cx - 5 ? 'end' : 'middle'} fill={fill}>
+                      <tspan x={x} dy="-0.6em" style={{ fontSize: 14, fontWeight: 600 }}>{name}</tspan>
+                      <tspan x={x} dy="1.4em" style={{ fontSize: 16, fontWeight: 700 }}>{`${value} (${(percent * 100).toFixed(0)}%)`}</tspan>
+                    </text>
+                  );
+                }}
                 labelLine={false}
               >
                 <Cell fill="#0284c7" />
                 <Cell fill="#f59e0b" />
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 14, fontWeight: 600 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -300,16 +313,27 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
         <div className={cardClass}>
           <h3 className="mb-4 text-lg font-semibold text-slate-900">Gender</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+            <PieChart style={{ overflow: 'visible' }}>
               <Pie
                 data={genderData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={48}
+                outerRadius={78}
                 paddingAngle={4}
                 dataKey="value"
-                label={({ name, percent, value }: { name?: string; percent?: number; value?: number }) => `${name ?? ''} ${value ?? 0} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                label={({ cx, cy, midAngle, outerRadius, name, value, percent, fill }: any) => {
+                  const RADIAN = Math.PI / 180;
+                  const r = outerRadius + 20;
+                  const x = cx + r * Math.cos(-midAngle * RADIAN);
+                  const y = cy + r * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text x={x} y={y} textAnchor={x > cx + 5 ? 'start' : x < cx - 5 ? 'end' : 'middle'} fill={fill}>
+                      <tspan x={x} dy="-0.6em" style={{ fontSize: 14, fontWeight: 600 }}>{name}</tspan>
+                      <tspan x={x} dy="1.4em" style={{ fontSize: 16, fontWeight: 700 }}>{`${value} (${(percent * 100).toFixed(0)}%)`}</tspan>
+                    </text>
+                  );
+                }}
                 labelLine={false}
               >
                 {genderData.map((_, i) => (
@@ -317,7 +341,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 ))}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 14, fontWeight: 600 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -354,9 +378,9 @@ export default function AdminPage() {
   const [dataLoading, setDataLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'table' | 'analytics'>(() => {
-    if (typeof window === 'undefined') return 'table';
+    if (typeof window === 'undefined') return 'list';
     const param = new URLSearchParams(window.location.search).get('view');
-    return (['table', 'list', 'analytics'].includes(param || '') ? param : 'table') as 'table' | 'list' | 'analytics';
+    return (['table', 'list', 'analytics'].includes(param || '') ? param : 'list') as 'table' | 'list' | 'analytics';
   });
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -396,11 +420,11 @@ export default function AdminPage() {
     }
   }
 
-  // Build flat rows for table view, filter, then sort (exclude appletree and canceled)
+  // Build flat rows for table view, filter, then sort
   const allTableRows = registrations.flatMap((reg) =>
     reg.children
       .map((child, idx) => ({ reg, child, idx }))
-      .filter(({ child }) => !child.canceled && child.class !== 'appletree')
+      .filter(({ child }) => !child.canceled)
   );
 
   const filteredRows = allTableRows.filter(({ reg, child }) => {
@@ -426,10 +450,11 @@ export default function AdminPage() {
       if (src !== filterSource) return false;
     }
     if (filterPayment && reg.payment_status !== filterPayment) return false;
+    const cls = child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular');
     if (filterType) {
-      const cls = child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular');
-      if (filterType === 'regular' && cls !== 'regular') return false;
-      if (filterType === 'beginner' && cls !== 'beginner') return false;
+      if (cls !== filterType) return false;
+    } else {
+      if (cls === 'appletree') return false;
     }
     return true;
   });
@@ -620,20 +645,34 @@ export default function AdminPage() {
             <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
           </div>
         </div>
-        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 border-t border-slate-200">
-          <button onClick={() => { setFilterType(filterType === 'regular' ? null : 'regular'); setViewMode('table'); setCurrentPage(0); }} className={`flex items-center justify-between p-5 px-6 transition hover:bg-slate-50 ${filterType === 'regular' ? 'bg-sky-50 ring-2 ring-inset ring-sky-300' : ''}`}>
-            <p className="text-sm font-semibold text-slate-500">Regular VBS</p>
-            <p className="text-2xl font-bold text-slate-900">{classCounts.regular || 0}</p>
-          </button>
-          <button onClick={() => { setFilterType(filterType === 'beginner' ? null : 'beginner'); setViewMode('table'); setCurrentPage(0); }} className={`flex items-center justify-between p-5 px-6 transition hover:bg-slate-50 ${filterType === 'beginner' ? 'bg-sky-50 ring-2 ring-inset ring-sky-300' : ''}`}>
-            <p className="text-sm font-semibold text-slate-500">Beginner VBS</p>
-            <p className="text-2xl font-bold text-slate-900">{classCounts.beginner || 0}</p>
-          </button>
-          <Link href="/admin/appletree" className="flex items-center justify-between p-5 px-6 transition hover:bg-slate-50">
-            <p className="text-sm font-semibold text-slate-500">Apple Tree</p>
-            <p className="text-2xl font-bold text-slate-900">{appletreeCount}</p>
-          </Link>
-        </div>
+      </div>
+
+      {/* Class filter buttons — aligned to stat columns above */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <button
+          onClick={() => { setFilterType(filterType === 'regular' ? null : 'regular'); setViewMode('list'); setCurrentPage(0); }}
+          style={{ border: '1.5px solid #93c5e8', borderRadius: 14, backgroundColor: filterType === 'regular' ? '#dbeeff' : 'transparent' }}
+          className="flex items-center justify-between px-4 py-3 transition hover:bg-[#dbeeff]"
+        >
+          <span style={{ color: '#2563a8' }} className="text-sm font-semibold">Regular VBS</span>
+          <span style={{ backgroundColor: '#3a7bd5' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{classCounts.regular || 0}</span>
+        </button>
+        <button
+          onClick={() => { setFilterType(filterType === 'beginner' ? null : 'beginner'); setViewMode('list'); setCurrentPage(0); }}
+          style={{ border: '1.5px solid #6dd4b0', borderRadius: 14, backgroundColor: filterType === 'beginner' ? '#d0f5e8' : 'transparent' }}
+          className="flex items-center justify-between px-4 py-3 transition hover:bg-[#d0f5e8]"
+        >
+          <span style={{ color: '#0e7a5a' }} className="text-sm font-semibold">Beginner VBS</span>
+          <span style={{ backgroundColor: '#1a9e75' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{classCounts.beginner || 0}</span>
+        </button>
+        <button
+          onClick={() => { setFilterType(filterType === 'appletree' ? null : 'appletree'); setViewMode('list'); setCurrentPage(0); }}
+          style={{ border: '1.5px solid #9ec95a', borderRadius: 14, backgroundColor: filterType === 'appletree' ? '#dff0c8' : 'transparent' }}
+          className="flex items-center justify-between px-4 py-3 transition hover:bg-[#dff0c8]"
+        >
+          <span style={{ color: '#3a6b12' }} className="text-sm font-semibold">Apple Tree</span>
+          <span style={{ backgroundColor: '#5c9220' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{appletreeCount}</span>
+        </button>
       </div>
 
       {/* View mode segmented control */}
@@ -642,8 +681,8 @@ export default function AdminPage() {
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">View as</span>
           <div className="flex gap-1 rounded-full bg-slate-100 p-1">
             {([
-              { key: 'table', label: 'Table' },
               { key: 'list', label: 'List' },
+              { key: 'table', label: 'Table' },
               { key: 'analytics', label: 'Analytics' },
             ] as const).map(({ key, label }) => (
               <button
@@ -726,6 +765,7 @@ export default function AdminPage() {
                   <option value="">Type</option>
                   <option value="regular">Regular VBS</option>
                   <option value="beginner">Beginner VBS</option>
+                  <option value="appletree">Apple Tree</option>
                 </select>
                 {filterType && (
                   <button onClick={() => { setFilterType(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
@@ -1017,8 +1057,14 @@ export default function AdminPage() {
           )}
 
           <div className="divide-y divide-slate-100">
-            {registrations.filter((r) => r.children.some((c) => c.class !== 'appletree')).map((reg) => {
-              const visibleChildren = reg.children.filter((c) => c.class !== 'appletree');
+            {registrations.filter((r) => r.children.some((c) => {
+              const cls = c.class ?? (c.grade === 'Pre-K' ? 'beginner' : 'regular');
+              return filterType ? cls === filterType : cls !== 'appletree';
+            })).map((reg) => {
+              const visibleChildren = reg.children.filter((c) => {
+                const cls = c.class ?? (c.grade === 'Pre-K' ? 'beginner' : 'regular');
+                return filterType ? cls === filterType : cls !== 'appletree';
+              });
               return (
               <div key={reg.id}>
                 {/* Row */}
