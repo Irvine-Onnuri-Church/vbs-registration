@@ -104,12 +104,6 @@ export default function CheckInPage() {
     checkSession();
   }, []);
 
-  // Poll every 15 s while authenticated to stay in sync across devices
-  useEffect(() => {
-    if (!authenticated) return;
-    const id = setInterval(fetchRegistrations, 15_000);
-    return () => clearInterval(id);
-  }, [authenticated, fetchRegistrations]);
 
   async function checkSession() {
     try {
@@ -184,8 +178,6 @@ export default function CheckInPage() {
           return { ...reg, children: updatedChildren };
         }),
       );
-      // Background re-sync so stats and other rows stay accurate
-      fetchRegistrations();
     }
 
     setLoadingCheckin(null);
@@ -248,7 +240,7 @@ export default function CheckInPage() {
     { key: 'all', label: 'All' },
     { key: 'remaining', label: 'Remaining' },
     { key: 'checked_in', label: 'Checked in' },
-    { key: 'has_allergies', label: 'Has allergies' },
+    { key: 'has_allergies', label: 'Allergies/ Medical' },
   ];
 
   // ── Checking session ──
