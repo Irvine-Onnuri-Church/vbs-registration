@@ -421,7 +421,7 @@ export default function CheckInPage() {
                       <td className="px-4 py-3 text-slate-600">{child.grade}</td>
                       <td className="px-4 py-3">
                         {child.class === 'appletree' ? (
-                          <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Apple Tree</span>
+                          <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Apple Tree</span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
@@ -535,16 +535,16 @@ export default function CheckInPage() {
         >
           <div
             className="animate-fade-in relative w-full max-w-md p-6 shadow-2xl"
-            style={{ backgroundColor: '#1a2535', border: '1px solid #2a3a4a', borderRadius: '16px' }}
+            style={{ backgroundColor: '#1c1c1e', border: '1px solid #2a3a4a', borderRadius: '16px' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* × close */}
             <button
               onClick={() => setConfirmData(null)}
-              className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-white/10"
-              style={{ color: '#8899aa' }}
+              className="absolute -right-3 -top-3 flex items-center justify-center rounded-full text-white transition hover:opacity-80"
+              style={{ width: '36px', height: '36px', backgroundColor: '#2a3a4a' }}
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
