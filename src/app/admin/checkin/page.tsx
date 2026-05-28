@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
 
@@ -66,6 +66,14 @@ export default function CheckInPage() {
 
   const GRADES = ['Pre-K', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 
+  const fetchRegistrations = useCallback(async () => {
+    const regRes = await fetch('/api/admin/registrations', { cache: 'no-store' });
+    if (regRes.ok) {
+      const data = await regRes.json();
+      setRegistrations(data.registrations);
+    }
+  }, []);
+
   function openCheckInModal(reg: Registration, childIndex: number) {
     setModalData({ reg, childIndex });
     setModalStep(1);
@@ -96,17 +104,20 @@ export default function CheckInPage() {
     checkSession();
   }, []);
 
+  // Poll every 15 s while authenticated to stay in sync across devices
+  useEffect(() => {
+    if (!authenticated) return;
+    const id = setInterval(fetchRegistrations, 15_000);
+    return () => clearInterval(id);
+  }, [authenticated, fetchRegistrations]);
+
   async function checkSession() {
     try {
       const res = await fetch('/api/admin/auth');
       if (res.ok) {
         setAuthenticated(true);
         setDataLoading(true);
-        const regRes = await fetch('/api/admin/registrations');
-        if (regRes.ok) {
-          const data = await regRes.json();
-          setRegistrations(data.registrations);
-        }
+        await fetchRegistrations();
         setDataLoading(false);
       }
     } finally {
@@ -114,7 +125,7 @@ export default function CheckInPage() {
     }
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: { preventDefault(): void }) {
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
@@ -135,11 +146,7 @@ export default function CheckInPage() {
     setAuthenticated(true);
     setAuthLoading(false);
     setDataLoading(true);
-    const regRes = await fetch('/api/admin/registrations');
-    if (regRes.ok) {
-      const data = await regRes.json();
-      setRegistrations(data.registrations);
-    }
+    await fetchRegistrations();
     setDataLoading(false);
   }
 
@@ -159,6 +166,7 @@ export default function CheckInPage() {
     });
 
     if (res.ok) {
+      // Optimistic update — instant UI feedback
       setRegistrations((prev) =>
         prev.map((reg) => {
           if (reg.id !== regId) return reg;
@@ -176,6 +184,8 @@ export default function CheckInPage() {
           return { ...reg, children: updatedChildren };
         }),
       );
+      // Background re-sync so stats and other rows stay accurate
+      fetchRegistrations();
     }
 
     setLoadingCheckin(null);
@@ -433,7 +443,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              대리 픽업
+                              Alternate Pickup
                             </span>
                             <button
                               onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name })}
@@ -488,7 +498,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>대리 픽업 자녀</span>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {proxyChildren.map((pc, i) => {
@@ -539,7 +549,7 @@ export default function CheckInPage() {
               </svg>
             </button>
 
-            <h3 className="mb-4 pr-6 text-base text-white" style={{ fontWeight: 500 }}>체크인을 취소하시겠습니까?</h3>
+            <h3 className="mb-4 pr-6 text-base text-white" style={{ fontWeight: 500 }}>Cancel this check-in?</h3>
 
             {/* Child info card */}
             <div className="mb-6 flex items-center gap-3 rounded-[10px] px-[14px] py-3" style={{ backgroundColor: '#0f1c2a' }}>
@@ -548,7 +558,7 @@ export default function CheckInPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-white" style={{ fontWeight: 500 }}>{confirmData.childName}</p>
-                <p className="text-xs" style={{ color: '#8899aa' }}>{confirmData.grade} · T-shirt {confirmData.tshirtSize} · 부모: {confirmData.parentName}</p>
+                <p className="text-xs" style={{ color: '#8899aa' }}>{confirmData.grade} · T-shirt {confirmData.tshirtSize} · Parent: {confirmData.parentName}</p>
               </div>
             </div>
 
@@ -558,7 +568,7 @@ export default function CheckInPage() {
                 className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition hover:bg-white/5"
                 style={{ border: '1px solid #3a4a5a' }}
               >
-                아니오
+                No
               </button>
               <button
                 onClick={async () => {
@@ -569,7 +579,7 @@ export default function CheckInPage() {
                 className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: '#E24B4A' }}
               >
-                {loadingCheckin === `${confirmData.regId}-${confirmData.childIndex}` ? '취소 중...' : '체크인 취소'}
+                {loadingCheckin === `${confirmData.regId}-${confirmData.childIndex}` ? 'Canceling...' : 'Cancel Check-in'}
               </button>
             </div>
           </div>
@@ -585,9 +595,9 @@ export default function CheckInPage() {
         const isLoading = loadingCheckin === loadKey;
 
         const steps = [
-          { num: 1, label: '본인 확인' },
-          { num: 2, label: '자녀 정보' },
-          { num: 3, label: '완료' },
+          { num: 1, label: 'Guardian Check' },
+          { num: 2, label: 'Child Info' },
+          { num: 3, label: 'Done' },
         ];
 
         return (
@@ -597,7 +607,7 @@ export default function CheckInPage() {
 
             {/* Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="relative w-full max-w-md rounded-3xl bg-[#1c1c1e] p-6 shadow-2xl">
+              <div className="relative w-full max-w-lg rounded-3xl bg-[#1c1c1e] p-6 shadow-2xl">
 
                 {/* Close button */}
                 <button
@@ -650,7 +660,7 @@ export default function CheckInPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-white">{child.first_name} {child.last_name}</p>
-                      <p className="text-xs text-slate-400">{child.grade} · T-shirt {child.tshirt_size} · 부모: {reg.parent_name}</p>
+                      <p className="text-xs text-slate-400">{child.grade} · T-shirt {child.tshirt_size} · Parent: {reg.parent_name}</p>
                     </div>
                   </div>
                 )}
@@ -658,8 +668,8 @@ export default function CheckInPage() {
                 {/* Step 1 */}
                 {modalStep === 1 && (
                   <>
-                    <h2 className="mb-1 text-lg font-bold text-white">체크인하시는 분이 누구신가요?</h2>
-                    <p className="mb-5 text-sm text-slate-400">아이를 데려오신 분을 선택해 주세요.</p>
+                    <h2 className="mb-1 text-lg font-bold text-white">Who is checking in?</h2>
+                    <p className="mb-5 text-sm text-slate-400">Please select who is picking up the child.</p>
 
                     <div className="mb-6 grid grid-cols-2 gap-3">
                       {/* 부모님 본인 */}
@@ -682,8 +692,8 @@ export default function CheckInPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M10 18l2.5 2.5 5.5-5.5"/>
                         </svg>
                         <div className="text-center">
-                          <p className="text-sm font-bold" style={{ color: pickupType === 'parent' ? '#0F6E56' : '#ffffff' }}>부모님 본인</p>
-                          <p className="text-xs" style={{ color: pickupType === 'parent' ? '#1D9E75' : '#9ca3af' }}>등록된 보호자</p>
+                          <p className="text-sm font-bold" style={{ color: pickupType === 'parent' ? '#0F6E56' : '#ffffff' }}>Parent</p>
+                          <p className="text-xs" style={{ color: pickupType === 'parent' ? '#1D9E75' : '#9ca3af' }}>Registered guardian</p>
                         </div>
                       </button>
 
@@ -709,8 +719,8 @@ export default function CheckInPage() {
                           <path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                         </svg>
                         <div className="text-center">
-                          <p className="text-sm font-bold" style={{ color: pickupType === 'friend' ? '#185FA5' : '#ffffff' }}>부모님 지인</p>
-                          <p className="text-xs" style={{ color: pickupType === 'friend' ? '#378ADD' : '#9ca3af' }}>대리 픽업</p>
+                          <p className="text-sm font-bold" style={{ color: pickupType === 'friend' ? '#185FA5' : '#ffffff' }}>Alternate Pickup</p>
+                          <p className="text-xs" style={{ color: pickupType === 'friend' ? '#378ADD' : '#9ca3af' }}>Picking up on behalf</p>
                         </div>
                       </button>
                     </div>
@@ -728,16 +738,16 @@ export default function CheckInPage() {
                         <circle cx="16.5" cy="5.5" r="2.5"/>
                         <path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                       </svg>
-                      <span className="text-sm font-semibold">부모님 지인 대리 픽업</span>
+                      <span className="text-sm font-semibold">Alternate Pickup</span>
                     </div>
 
-                    <h2 className="mb-1 text-lg font-bold text-white">데려오시는 자녀 정보</h2>
-                    <p className="mb-4 text-sm text-slate-400">자녀의 이름과 학년을 입력해 주세요.</p>
+                    <h2 className="mb-1 text-lg font-bold text-white">Child Information</h2>
+                    <p className="mb-4 text-sm text-slate-400">Please enter the child's name and grade.</p>
 
                     {/* Column headers */}
                     <div className="mb-1.5 flex gap-2">
-                      <span className="flex-1 pl-9 text-xs text-slate-400">이름</span>
-                      <span className="flex-1 text-xs text-slate-400">학년</span>
+                      <span className="flex-1 pl-9 text-xs text-slate-400">Name</span>
+                      <span className="flex-1 text-xs text-slate-400">Grade</span>
                     </div>
 
                     {/* Rows */}
@@ -757,7 +767,7 @@ export default function CheckInPage() {
                                 next[idx] = { ...next[idx], name: e.target.value };
                                 setStep2Rows(next);
                               }}
-                              placeholder="자녀 이름"
+                              placeholder="Child's name"
                               className="w-full rounded-xl bg-zinc-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-slate-500"
                             />
                           </div>
@@ -774,7 +784,7 @@ export default function CheckInPage() {
                                 paddingRight: step2Rows.length > 1 ? '32px' : '12px',
                               }}
                             >
-                              {row.grade || '학년 선택'}
+                              {row.grade || 'Select grade'}
                             </button>
                             {step2Rows.length > 1 && (
                               <button
@@ -821,7 +831,7 @@ export default function CheckInPage() {
                         onClick={() => setStep2Rows([...step2Rows, { name: '', grade: '' }])}
                         className="mb-5 w-full rounded-xl bg-zinc-800 py-3 text-sm font-medium text-slate-300 transition hover:bg-zinc-700"
                       >
-                        + 자녀 추가
+                        + Add child
                       </button>
                     )}
                   </>
@@ -835,7 +845,7 @@ export default function CheckInPage() {
                         onClick={closeModal}
                         className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
                       >
-                        취소
+                        Cancel
                       </button>
                       <button
                         onClick={handleModalNext}
@@ -845,7 +855,7 @@ export default function CheckInPage() {
                           backgroundColor: pickupType === 'parent' ? '#1D9E75' : '#1e3a6e',
                         }}
                       >
-                        {isLoading ? '저장 중...' : pickupType === 'parent' ? '체크인 완료' : '다음 →'}
+                        {isLoading ? 'Saving...' : pickupType === 'parent' ? 'Complete Check-in' : 'Next →'}
                       </button>
                     </>
                   ) : (
@@ -854,7 +864,7 @@ export default function CheckInPage() {
                         onClick={() => setModalStep(1)}
                         className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
                       >
-                        ← 이전
+                        ← Back
                       </button>
                       <button
                         onClick={async () => {
@@ -864,7 +874,7 @@ export default function CheckInPage() {
                         disabled={isLoading}
                         className="flex-1 rounded-2xl bg-[#1e3a6e] py-3 text-sm font-semibold text-white transition hover:bg-[#254a8a] disabled:opacity-40"
                       >
-                        {isLoading ? '저장 중...' : '체크인 완료'}
+                        {isLoading ? 'Saving...' : 'Complete Check-in'}
                       </button>
                     </>
                   )}
