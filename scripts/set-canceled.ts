@@ -22,6 +22,7 @@ function getDb() {
 const TO_CANCEL = [
   { first_name: 'Laelle', last_name: 'Jeon', parent_email: 'imclaire7878@gmail.com' },
   { first_name: 'Evan', last_name: 'Kang', parent_email: 'chrisjgy21@gmail.com' },
+  { first_name: 'Elle', last_name: 'Chang', parent_email: 'iced.prin@gmail.com' },
 ];
 
 async function run() {
@@ -38,8 +39,8 @@ async function run() {
     const updatedChildren = children.map((child) => {
       const match = TO_CANCEL.find(
         (tc) =>
-          tc.first_name.toLowerCase() === String(child.first_name || '').toLowerCase() &&
-          tc.last_name.toLowerCase() === String(child.last_name || '').toLowerCase() &&
+          tc.first_name.toLowerCase().trim() === String(child.first_name || '').toLowerCase().trim() &&
+          tc.last_name.toLowerCase().trim() === String(child.last_name || '').toLowerCase().trim() &&
           tc.parent_email.toLowerCase() === (data.email || '').toLowerCase(),
       );
       if (match) {

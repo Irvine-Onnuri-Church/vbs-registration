@@ -81,7 +81,7 @@ function downloadCSV(rows: { reg: Registration; child: Child }[], isAppletree = 
         new Date(child.created_at || reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
         reg.parent_name, formatPhone(reg.phone_number), reg.email,
         child.allergy_information ?? '', child.medical_notes ?? '', reg.registration_phase, reg.payment_status, String(child.price),
-        reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.total_amount),
+        reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0)),
       ]);
 
   const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
@@ -1104,7 +1104,7 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      {filterType !== 'appletree' && <span className="font-semibold text-slate-900">{formatCurrency(reg.total_amount)}</span>}
+                      {filterType !== 'appletree' && <span className="font-semibold text-slate-900">{formatCurrency(reg.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0))}</span>}
                       <svg
                         className={`h-4 w-4 text-slate-400 transition-transform ${expandedId === reg.id ? 'rotate-180' : ''}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -1239,7 +1239,7 @@ export default function AdminPage() {
                 {/* Total paid */}
                 <div className="rounded-2xl bg-slate-900 px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Paid</p>
-                  <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(reg.total_amount)}</p>
+                  <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(reg.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0))}</p>
                   {reg.paypal_order_id && (
                     <a
                       href={`https://www.paypal.com/merchant/transactions/details/${reg.paypal_order_id}`}
