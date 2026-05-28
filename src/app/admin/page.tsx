@@ -63,8 +63,8 @@ type Registration = {
 
 function downloadCSV(rows: { reg: Registration; child: Child }[], isAppletree = false) {
   const headers = isAppletree
-    ? ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies', 'Friend', 'Emergency Contact', 'Emergency Phone', 'Photo Consent']
-    : ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies', 'Friend', 'Phase', 'Status', 'Price', 'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total'];
+    ? ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies/ Medical', 'Friend', 'Emergency Contact', 'Emergency Phone', 'Photo Consent']
+    : ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies/ Medical', 'Friend', 'Phase', 'Status', 'Price', 'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total'];
 
   const formatDobCSV = (dob: string) => {
     const [year, month, day] = dob.split('-');
@@ -878,7 +878,7 @@ export default function AdminPage() {
                   onChange={(e) => { setFilterAllergies(e.target.value === '' ? null : e.target.value === 'yes'); setCurrentPage(0); }}
                   className={`rounded-full border py-1.5 text-sm font-semibold outline-none transition ${filterAllergies !== null ? 'border-sky-300 bg-sky-50 text-sky-700 pl-3 pr-7' : 'border-slate-300 text-slate-500 hover:bg-slate-50 px-3'}`}
                 >
-                  <option value="">Allergies</option>
+                  <option value="">Allergies/ Medical</option>
                   <option value="yes">Has allergies</option>
                   <option value="no">No allergies</option>
                 </select>
@@ -925,7 +925,7 @@ export default function AdminPage() {
                     { key: 'parent', label: 'Parent', sortable: true },
                     { key: 'phone', label: 'Mobile', sortable: true },
                     { key: 'email', label: 'Email', sortable: true },
-                    { key: 'allergies', label: 'Allergies', sortable: false },
+                    { key: 'allergies', label: 'Allergies/ Medical', sortable: false },
                     { key: 'friend', label: 'Friend', sortable: false },
                     ...(filterType === 'appletree' ? [] : [
                       { key: 'phase', label: 'Phase', sortable: false },
@@ -1278,7 +1278,7 @@ export default function AdminPage() {
                               <span className="font-medium text-slate-700">{formatCurrency(child.price)}</span>
                             </div>
                             {child.allergy_information && (
-                              <p className="mt-2 text-sm text-amber-700">Allergies: {child.allergy_information}</p>
+                              <p className="mt-2 text-sm text-amber-700">Allergies/ Medical: {child.allergy_information}</p>
                             )}
                             {child.medical_notes && (
                               <p className="mt-1 text-sm text-slate-500">Friend: {child.medical_notes}</p>
