@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { registrationId, childIndex, checkedIn } = await request.json();
+    const { registrationId, childIndex, checkedIn, proxyChildren } = await request.json();
 
     if (!registrationId || childIndex === undefined || checkedIn === undefined) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
@@ -36,7 +36,11 @@ export async function POST(request: Request) {
     children[childIndex] = {
       ...children[childIndex],
       check_in: checkedIn
-        ? { checked_in: true, timestamp: new Date().toISOString() }
+        ? {
+            checked_in: true,
+            timestamp: new Date().toISOString(),
+            ...(Array.isArray(proxyChildren) && proxyChildren.length ? { proxy_children: proxyChildren } : {}),
+          }
         : { checked_in: false, timestamp: null },
     };
 
