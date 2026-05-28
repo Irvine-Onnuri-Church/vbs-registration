@@ -39,6 +39,7 @@ type Child = {
   price: number;
   class?: 'regular' | 'beginner' | 'appletree';
   canceled?: boolean;
+  canceled_at?: string;
   created_at?: string;
   paypal_order_id?: string;
 };

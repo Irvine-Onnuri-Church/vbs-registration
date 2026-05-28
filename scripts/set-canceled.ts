@@ -46,7 +46,7 @@ async function run() {
       if (match) {
         changed = true;
         console.log(`  Setting canceled: true for ${child.first_name} ${child.last_name} (parent: ${data.parent_name}, doc: ${doc.id})`);
-        return { ...child, canceled: true };
+        return { ...child, canceled: true, canceled_at: new Date().toISOString() };
       }
       return child;
     });
