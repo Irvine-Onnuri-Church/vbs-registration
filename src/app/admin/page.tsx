@@ -39,6 +39,8 @@ type Child = {
   price: number;
   class?: 'regular' | 'beginner' | 'appletree';
   canceled?: boolean;
+  created_at?: string;
+  paypal_order_id?: string;
 };
 
 type Registration = {
@@ -70,13 +72,13 @@ function downloadCSV(rows: { reg: Registration; child: Child }[], isAppletree = 
 
   const csvRows = rows.map(({ reg, child }) => isAppletree
     ? [
-        new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
+        new Date(child.created_at || reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
         reg.parent_name, formatPhone(reg.phone_number), reg.email,
         child.allergy_information ?? '', child.medical_notes ?? '',
         reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No',
       ]
     : [
-        new Date(reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
+        new Date(child.created_at || reg.created_at).toLocaleDateString(), child.grade, `${child.first_name} ${child.last_name}`, child.tshirt_size, formatDobCSV(child.date_of_birth), child.gender,
         reg.parent_name, formatPhone(reg.phone_number), reg.email,
         child.allergy_information ?? '', child.medical_notes ?? '', reg.registration_phase, reg.payment_status, String(child.price),
         reg.emergency_contact_name, formatPhone(reg.emergency_contact_phone), reg.photo_consent ? 'Yes' : 'No', String(reg.total_amount),
@@ -469,7 +471,7 @@ export default function AdminPage() {
     filteredRows.sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        case 'date': { const av = a.reg.created_at; const bv = b.reg.created_at; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
+        case 'date': { const av = a.child.created_at || a.reg.created_at; const bv = b.child.created_at || b.reg.created_at; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
         case 'child': { const av = `${a.child.first_name} ${a.child.last_name}`.toLowerCase(); const bv = `${b.child.first_name} ${b.child.last_name}`.toLowerCase(); cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
         case 'parent': { const av = a.reg.parent_name.toLowerCase(); const bv = b.reg.parent_name.toLowerCase(); cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
         case 'email': { const av = a.reg.email; const bv = b.reg.email; cmp = av < bv ? -1 : av > bv ? 1 : 0; break; }
@@ -953,7 +955,7 @@ export default function AdminPage() {
                 {paginatedRows.map(({ reg, child, idx }) => (
                   <tr key={`${reg.id}-${idx}`} className="cursor-pointer hover:bg-slate-50" onClick={() => setDrawerRegId(reg.id)}>
                     <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">
-                      {new Date(reg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(child.created_at || reg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </td>
                     <td className="whitespace-nowrap px-1.5 py-1 text-slate-500">{child.grade}</td>
                     <td className="whitespace-nowrap px-1.5 py-1 font-medium text-slate-900">
