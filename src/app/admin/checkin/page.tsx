@@ -41,6 +41,7 @@ type Registration = {
   email: string;
   phone_number: string;
   children: Child[];
+  created_at?: string;
 };
 
 type FlatRow       = { reg: Registration; child: Child; childIndex: number };
@@ -69,6 +70,36 @@ function getChildSessions(child: Child): Record<string, Session | null> {
 function formatDateCol(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+const GRADE_ORDER: Record<string, number> = {
+  'Pre-K': 0, 'TK': 1, 'Transitional Kindergarten': 1, 'Kindergarten': 2,
+  '1st Grade': 3, '2nd Grade': 4, '3rd Grade': 5,
+  '4th Grade': 6, '5th Grade': 7, '6th Grade': 8,
+};
+
+const TSHIRT_ORDER: Record<string, number> = {
+  'XS': 0, 'S': 1, 'M': 2, 'L': 3, 'XL': 4,
+  '2Y': 5, '3Y': 6, '4Y': 7, '5Y': 8,
+};
+
+function lastName(fullName: string): string {
+  return fullName.trim().split(/\s+/).pop()?.toLowerCase() ?? fullName.toLowerCase();
+}
+
+function getSortValue(row: FlatRow, col: string): string | number {
+  switch (col) {
+    case 'child':   return lastName(`${row.child.first_name} ${row.child.last_name}`);
+    case 'parent':  return lastName(row.reg.parent_name);
+    case 'grade':   return GRADE_ORDER[row.child.grade] ?? 99;
+    case 'class':   return row.child.class ?? '￿';
+    case 'tshirt':  return TSHIRT_ORDER[row.child.tshirt_size] ?? 99;
+    case 'allergy': {
+      const v = row.child.allergy_information ?? '';
+      return !!v && !/^(none|no|nope|na|n\/a|-)$/i.test(v.trim()) ? v.toLowerCase() : '￿';
+    }
+    default:        return '';
+  }
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -101,6 +132,8 @@ export default function CheckInPage() {
   const [step2Rows, setStep2Rows]             = useState<{ name: string; grade: string }[]>([{ name: '', grade: '' }]);
   const [openDropdownIdx, setOpenDropdownIdx] = useState<number | null>(null);
   const [modalMode, setModalMode]             = useState<ViewMode>('checkin');
+  const [sortCol,  setSortCol]                = useState<string | null>(null);
+  const [sortDir,  setSortDir]                = useState<'asc' | 'desc' | null>(null);
 
   const GRADES = ['Pre-K', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 
@@ -276,6 +309,14 @@ export default function CheckInPage() {
   function switchMode(newMode: ViewMode) {
     setViewMode(newMode);
     setFilterMode('all');
+    setSortCol(null);
+    setSortDir(null);
+  }
+
+  function handleSort(col: string) {
+    if (sortCol !== col) { setSortCol(col); setSortDir('asc'); }
+    else if (sortDir === 'asc') { setSortDir('desc'); }
+    else { setSortCol(null); setSortDir(null); }
   }
 
   // ─── Derived data ─────────────────────────────────────────────────────────
@@ -338,17 +379,17 @@ export default function CheckInPage() {
     return true;
   });
 
-  const gradeOrder: Record<string, number> = {
-    'Pre-K': 0, 'Transitional Kindergarten': 1, 'Kindergarten': 2,
-    '1st Grade': 3, '2nd Grade': 4, '3rd Grade': 5,
-    '4th Grade': 6, '5th Grade': 7, '6th Grade': 8,
-  };
-  filteredRows.sort((a, b) => {
-    const ga = gradeOrder[a.child.grade] ?? 99;
-    const gb = gradeOrder[b.child.grade] ?? 99;
-    if (ga !== gb) return ga - gb;
-    return `${a.child.first_name} ${a.child.last_name}`.localeCompare(`${b.child.first_name} ${b.child.last_name}`);
-  });
+  if (sortCol && sortDir) {
+    filteredRows.sort((a, b) => {
+      const va = getSortValue(a, sortCol);
+      const vb = getSortValue(b, sortCol);
+      const cmp = typeof va === 'number' && typeof vb === 'number'
+        ? va - vb
+        : String(va).localeCompare(String(vb));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
+  // else: preserve API order (created_at desc = most recent first)
 
   const totalChildren   = allRows.length;
   const checkedInCount  = allRows.filter(({ child }) => child.check_in?.checked_in).length;
@@ -370,6 +411,20 @@ export default function CheckInPage() {
     { key: 'checked_in',   label: viewMode === 'goodiebag' ? 'Picked up' : 'Checked in' },
     { key: 'has_allergies', label: 'Allergies/ Medical' },
   ];
+
+  const SORTABLE_COLS = [
+    { label: 'Child',              key: 'child',   sortable: true  },
+    { label: 'Parent',             key: 'parent',  sortable: true  },
+    { label: 'Grade',              key: 'grade',   sortable: true  },
+    { label: 'Class',              key: 'class',   sortable: true  },
+    { label: 'T-Shirt',            key: 'tshirt',  sortable: true  },
+    { label: 'Allergies/ Medical', key: 'allergy', sortable: false },
+  ];
+
+  function SortIcon({ col }: { col: string }) {
+    if (sortCol !== col) return <span className="ml-0.5 text-slate-300 text-[9px]">◆</span>;
+    return <span className="ml-0.5 text-[11px]">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+  }
 
   // ─── Session loading ──────────────────────────────────────────────────────
 
@@ -431,9 +486,11 @@ export default function CheckInPage() {
       {/* Page header */}
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">{viewMode === 'goodiebag' ? 'Goodie Bag Pick-up' : 'Check-in'}</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">{viewMode === 'goodiebag' ? 'Goodie Bag Pickup' : 'Check-in'}</h1>
         <p className="text-sm text-slate-500">
-          {EVENT_INFO.name} · {EVENT_INFO.subtitle} · {EVENT_INFO.dates}
+          {viewMode === 'goodiebag'
+            ? `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · May 17 & May 31, 2026`
+            : `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · ${EVENT_INFO.dates}`}
         </p>
       </div>
 
@@ -600,9 +657,15 @@ export default function CheckInPage() {
                     <th className="px-4 pb-1 pt-3" />
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies/ Medical'].map((col) => (
-                      <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        {col}
+                    {SORTABLE_COLS.map(({ label, key, sortable }) => (
+                      <th
+                        key={key}
+                        onClick={sortable ? () => handleSort(key) : undefined}
+                        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
+                      >
+                        <span className="inline-flex items-center">
+                          {label}{sortable && <SortIcon col={key} />}
+                        </span>
                       </th>
                     ))}
                     {goodieBagDates.map((date) => (
@@ -620,9 +683,15 @@ export default function CheckInPage() {
                 </>
               ) : (
                 <tr className="border-b border-slate-200 bg-slate-50/60">
-                  {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies/ Medical'].map((col) => (
-                    <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      {col}
+                  {SORTABLE_COLS.map(({ label, key }) => (
+                    <th
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className="cursor-pointer select-none px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600"
+                    >
+                      <span className="inline-flex items-center">
+                        {label}<SortIcon col={key} />
+                      </span>
                     </th>
                   ))}
                   <th className="px-4 py-3" />
