@@ -673,7 +673,7 @@ export default function CheckInPage() {
                         )}
                       </td>
                       {/* T-Shirt */}
-                      <td className="px-4 py-3 text-slate-600">{child.tshirt_size}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{child.tshirt_size}</td>
                       {/* Allergies */}
                       <td className="px-4 py-3">
                         {hasAllergy ? (
