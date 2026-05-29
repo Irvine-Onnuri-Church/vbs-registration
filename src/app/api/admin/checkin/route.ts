@@ -34,7 +34,14 @@ export async function POST(request: Request) {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const sessionKey = `${today}_${effectiveMode}`;
+    const goodiebagEventDates = ['2026-05-17', '2026-05-31'];
+    const effectiveGoodieBagDate = (() => {
+      const past = goodiebagEventDates.filter(d => d <= today);
+      return past.length > 0 ? past[past.length - 1] : goodiebagEventDates[0];
+    })();
+    const sessionKey = effectiveMode === 'goodiebag'
+      ? `${effectiveGoodieBagDate}_goodiebag`
+      : `${today}_checkin`;
     const existingSessions: Record<string, unknown> = { ...(children[childIndex].sessions || {}) };
 
     if (effectiveMode === 'goodiebag') {

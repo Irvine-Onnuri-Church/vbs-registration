@@ -111,6 +111,14 @@ function formatPhone(phone: string): string {
   return phone ?? '';
 }
 
+const GOODIEBAG_EVENT_DATES = ['2026-05-17', '2026-05-31'];
+
+function effectiveGoodieBagDate(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const past = GOODIEBAG_EVENT_DATES.filter(d => d <= today);
+  return past.length > 0 ? past[past.length - 1] : GOODIEBAG_EVENT_DATES[0];
+}
+
 function downloadCheckinCSV(rows: FlatRow[], viewMode: ViewMode) {
   const escape = (val: string) => `"${String(val).replace(/"/g, '""')}"`;
   const headers = [
@@ -301,8 +309,9 @@ export default function CheckInPage() {
     });
 
     if (res.ok) {
-      const today = new Date().toISOString().slice(0, 10);
-      const sessionKey = `${today}_${mode}`;
+      const sessionKey = mode === 'goodiebag'
+        ? `${effectiveGoodieBagDate()}_goodiebag`
+        : `${new Date().toISOString().slice(0, 10)}_checkin`;
       setRegistrations((prev) =>
         prev.map((reg) => {
           if (reg.id !== regId) return reg;
@@ -369,34 +378,17 @@ export default function CheckInPage() {
 
   const showMultiColumns = filterMode === 'all';
 
-  const FIXED_GOODIEBAG_DATES = ['2026-05-17', '2026-05-31'];
-
-  const goodieBagDates = showMultiColumns ? [...new Set([
-    ...FIXED_GOODIEBAG_DATES,
-    ...allRows.flatMap(({ child }) =>
-      Object.entries(child.sessions ?? {})
-        .filter(([k, v]) => k.endsWith('_goodiebag') && v !== null)
-        .map(([k]) => k.replace('_goodiebag', '')),
-    ),
-  ])].sort() : [];
-
-  const FIXED_CHECKIN_DATES = ['2026-06-10'];
-
-  const checkinDates = showMultiColumns ? [...new Set([
-    ...FIXED_CHECKIN_DATES,
-    ...allRows.flatMap(({ child }) =>
-      Object.entries(getChildSessions(child))
-        .filter(([k, v]) => k.endsWith('_checkin') && v !== null)
-        .map(([k]) => k.replace('_checkin', '')),
-    ),
-  ])].sort() : [];
+  // Only show the two fixed goodie bag event dates — no dynamic dates
+  const goodieBagDates = showMultiColumns ? GOODIEBAG_EVENT_DATES : [];
+  const checkinDates   = showMultiColumns ? ['2026-06-10'] : [];
 
   const hasGapCol = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
-  // 9 static cols: grade, last name, first name, tshirt, dob, gender, parent, mobile, notes
-  const staticColCount = 9;
+  const showNotesCol   = filterMode === 'has_allergies';
+  const showActionCol  = !showMultiColumns && filterMode !== 'has_allergies';
+  const staticColCount = showNotesCol ? 8 : 7;
   const totalCols = showMultiColumns
     ? staticColCount + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
-    : staticColCount + 1; // +1 for action column
+    : staticColCount + (showActionCol ? 1 : 0);
 
   function hasAnyPickup(child: Child): boolean {
     return Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up');
@@ -468,7 +460,6 @@ export default function CheckInPage() {
     { label: 'Grade',      key: 'grade',      sortable: true,  thClass: '' },
     { label: 'Last Name',  key: 'last_name',  sortable: true,  thClass: '' },
     { label: 'First Name', key: 'first_name', sortable: true,  thClass: '' },
-    { label: 'T-Shirt',    key: 'tshirt',     sortable: true,  thClass: '' },
     { label: 'DOB',        key: 'dob',        sortable: true,  thClass: '' },
     { label: 'Gender',     key: 'gender',     sortable: true,  thClass: '' },
     { label: 'Parent',     key: 'parent',     sortable: true,  thClass: '' },
@@ -683,16 +674,15 @@ export default function CheckInPage() {
               <col style={{ width: '70px' }} />
               <col style={{ width: '90px' }} />
               <col style={{ width: '90px' }} />
-              <col style={{ width: '60px' }} />
               <col style={{ width: '90px' }} />
               <col style={{ width: '50px' }} />
               <col style={{ width: '110px' }} />
               <col style={{ width: '110px' }} />
-              <col style={{ width: '90px' }} />
+              {showNotesCol && <col style={{ width: '90px' }} />}
               {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '60px' }} />)}
               {hasGapCol && <col style={{ width: '16px' }} />}
               {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '60px' }} />)}
-              {!showMultiColumns && <col style={{ width: '120px' }} />}
+              {showActionCol && <col style={{ width: '120px' }} />}
             </colgroup>
             <thead>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
@@ -733,7 +723,7 @@ export default function CheckInPage() {
                     )}
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
+                    {SORTABLE_COLS.filter(c => showNotesCol || c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
@@ -770,7 +760,7 @@ export default function CheckInPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="py-2 px-1.5" />{/* action */}
+                  {showActionCol && <th className="py-2 px-1.5" />}{/* action */}
                 </tr>
               )}
             </thead>
@@ -816,8 +806,6 @@ export default function CheckInPage() {
                       <td className="truncate py-2 px-1.5 text-xs font-semibold text-slate-900">{child.last_name}</td>
                       {/* First Name */}
                       <td className="truncate py-2 px-1.5 text-xs text-slate-700">{child.first_name}</td>
-                      {/* T-Shirt */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{child.tshirt_size}</td>
                       {/* DOB */}
                       <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
@@ -832,10 +820,12 @@ export default function CheckInPage() {
                       <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
                       </td>
-                      {/* Notes */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
-                        {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
-                      </td>
+                      {/* Notes — only in Allergies/Medical tab */}
+                      {showNotesCol && (
+                        <td className="truncate py-2 px-1.5 text-xs text-slate-600">
+                          {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
+                        </td>
+                      )}
                       {/* Multi-column history (All tab) */}
                       {showMultiColumns && (
                         <>
@@ -878,8 +868,8 @@ export default function CheckInPage() {
                           })}
                         </>
                       )}
-                      {/* Action column — non-All tabs only */}
-                      {!showMultiColumns && (
+                      {/* Action column — non-All, non-Allergies tabs only */}
+                      {showActionCol && (
                       <td className="py-2 px-1.5">
                         <div className="flex items-center justify-end">
                         {(viewMode === 'goodiebag' ? (
