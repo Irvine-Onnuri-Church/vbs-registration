@@ -476,8 +476,13 @@ export default function CheckInPage() {
   ];
 
   function SortIcon({ col }: { col: string }) {
-    if (sortCol !== col) return <span className="ml-0.5 text-slate-300 text-[9px]">◆</span>;
-    return <span className="ml-0.5 text-[11px]">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    return (
+      <svg className={`ml-1 h-3 w-3 ${sortCol === col ? 'text-slate-700' : 'text-slate-300'}`} viewBox="0 0 12 12" fill="currentColor">
+        {sortCol === col
+          ? (sortDir === 'asc' ? <path d="M6 3l4 5H2z" /> : <path d="M6 9l4-5H2z" />)
+          : <><path d="M6 2l3 4H3z" /><path d="M6 10l3-4H3z" /></>}
+      </svg>
+    );
   }
 
   // ─── Session loading ──────────────────────────────────────────────────────
@@ -679,7 +684,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 300px)', paddingLeft: '24px', paddingRight: '24px' }}>
+        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
@@ -692,7 +697,7 @@ export default function CheckInPage() {
               <col style={{ width: '148px' }} />
             </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr className="border-b border-slate-200 bg-slate-50/60">
+              <tr className="border-b border-slate-200 bg-slate-50">
                 {([
                   { label: 'Student Name', key: 'last_name',  sortable: true  },
                   { label: 'Grade',        key: 'grade',      sortable: true  },
@@ -703,7 +708,7 @@ export default function CheckInPage() {
                   <th
                     key={label}
                     onClick={sortable ? () => handleSort(key) : undefined}
-                    className={`truncate py-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
+                    className={`truncate py-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
                   >
                     <span className="inline-flex items-center whitespace-nowrap">
                       {label}{sortable && <SortIcon col={key} />}
@@ -712,7 +717,7 @@ export default function CheckInPage() {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">
@@ -721,11 +726,11 @@ export default function CheckInPage() {
                 </tr>
               )}
               {filteredRows.map(({ reg, child, childIndex: ci }) => (
-                <tr key={`${reg.id}-${ci}`} className="border-b border-slate-100 hover:bg-slate-50">
+                <tr key={`${reg.id}-${ci}`} className="hover:bg-slate-50 cursor-pointer">
                   <td className="py-4 px-3 text-[14px] font-bold text-slate-900">{child.last_name}, {child.first_name}</td>
-                  <td className="py-4 px-3 text-[14px] text-slate-600">{child.grade}</td>
+                  <td className="py-4 px-3 text-[14px] text-slate-500">{child.grade}</td>
                   <td className="py-4 px-3 text-[14px] text-slate-800 whitespace-normal break-words">{child.allergy_information}</td>
-                  <td className="py-4 px-3 text-[14px] text-slate-600">{reg.parent_name}</td>
+                  <td className="py-4 px-3 text-[14px] text-slate-500">{reg.parent_name}</td>
                   <td className="py-4 px-3 text-[14px]">
                     {reg.phone_number
                       ? <a href={`tel:${reg.phone_number}`} className="text-sky-600 underline underline-offset-2">{formatPhone(reg.phone_number)}</a>
@@ -740,11 +745,23 @@ export default function CheckInPage() {
 
         {/* ── Regular check-in / goodie-bag table ───────────────────────── */}
         {!isAllergyTab && (
-          <table className="text-left" style={{ tableLayout: 'auto' }}>
+          <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '65px' }} />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '82px' }} />
+              <col style={{ width: '46px' }} />
+              <col style={{ width: '106px' }} />
+              <col style={{ width: '106px' }} />
+              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '58px' }} />)}
+              {hasGapCol && <col style={{ width: '14px' }} />}
+              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '58px' }} />)}
+              {showActionCol && <col style={{ width: '112px' }} />}
+            </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
-                  <tr className="bg-slate-50/60">
+                  <tr className="bg-slate-50">
                     <th colSpan={staticColCount} className="py-2 px-1.5 pb-1 pt-2" />{/* static cols */}
                     {goodieBagDates.length > 0 && (
                       <th
@@ -779,12 +796,12 @@ export default function CheckInPage() {
                       </th>
                     )}
                   </tr>
-                  <tr className="border-b border-slate-200 bg-slate-50/60">
+                  <tr className="border-b border-slate-200 bg-slate-50">
                     {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
-                        className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                        className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                       >
                         <span className="inline-flex items-center whitespace-nowrap">
                           {label}{sortable && <SortIcon col={key} />}
@@ -805,12 +822,12 @@ export default function CheckInPage() {
                   </tr>
                 </>
               ) : (
-                <tr className="border-b border-slate-200 bg-slate-50/60">
+                <tr className="border-b border-slate-200 bg-slate-50">
                   {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
                     <th
                       key={key}
                       onClick={sortable ? () => handleSort(key) : undefined}
-                      className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                      className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                     >
                       <span className="inline-flex items-center whitespace-nowrap">
                         {label}{sortable && <SortIcon col={key} />}
@@ -846,7 +863,7 @@ export default function CheckInPage() {
                       className={`transition ${
                         !showMultiColumns && viewMode === 'checkin' && isProxyPickup
                           ? ''
-                          : `border-b border-slate-100 ${!showMultiColumns && rowActive ? '' : 'hover:bg-slate-50'}`
+                          : `border-b border-slate-100 ${!showMultiColumns && rowActive ? '' : 'cursor-pointer hover:bg-slate-50'}`
                       }`}
                       style={
                         !showMultiColumns && viewMode === 'checkin' && isProxyPickup
@@ -857,21 +874,21 @@ export default function CheckInPage() {
                       }
                     >
                       {/* Grade */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">{child.grade}</td>
+                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">{child.grade}</td>
                       {/* Student Name */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
+                      <td className="truncate py-1 px-1.5 text-sm font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
                       {/* DOB */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
+                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Gender */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
+                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
                         {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Parent */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">{reg.parent_name}</td>
+                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">{reg.parent_name}</td>
                       {/* Mobile */}
-                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
+                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Multi-column history (All tab) */}
@@ -881,7 +898,7 @@ export default function CheckInPage() {
                             const s = child.sessions?.[`${date}_goodiebag`];
                             const isAlt = s?.pickup_type === 'alternate';
                             return (
-                              <td key={`gb-${date}`} className="py-2 px-1.5 text-center">
+                              <td key={`gb-${date}`} className="py-1 px-1.5 text-center">
                                 {s ? (
                                   <span className="inline-flex flex-col items-center gap-0.5">
                                     <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
@@ -901,7 +918,7 @@ export default function CheckInPage() {
                           {checkinDates.map((date) => {
                             const s = getChildSessions(child)[`${date}_checkin`];
                             return (
-                              <td key={`ci-${date}`} className="py-2 px-1.5 text-center">
+                              <td key={`ci-${date}`} className="py-1 px-1.5 text-center">
                                 {s ? (
                                   <span className="inline-flex items-center justify-center rounded-full bg-teal-100 p-1">
                                     <svg className="h-3 w-3 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -918,7 +935,7 @@ export default function CheckInPage() {
                       )}
                       {/* Action column — non-All, non-Allergies tabs only */}
                       {showActionCol && (
-                      <td className="py-2 px-1.5">
+                      <td className="py-1 px-1.5">
                         <div className="flex items-center justify-end">
                         {(viewMode === 'goodiebag' ? (
                           isPickedUp ? (
