@@ -413,12 +413,12 @@ export default function CheckInPage() {
   ];
 
   const SORTABLE_COLS = [
-    { label: 'Child',              key: 'child',   sortable: true  },
-    { label: 'Parent',             key: 'parent',  sortable: true  },
-    { label: 'Grade',              key: 'grade',   sortable: true  },
-    { label: 'Class',              key: 'class',   sortable: true  },
-    { label: 'T-Shirt',            key: 'tshirt',  sortable: true  },
-    { label: 'Allergies/ Medical', key: 'allergy', sortable: false },
+    { label: 'Child',              key: 'child',   sortable: true,  thClass: ''                          },
+    { label: 'Parent',             key: 'parent',  sortable: true,  thClass: ''                          },
+    { label: 'Grade',              key: 'grade',   sortable: true,  thClass: ''                          },
+    { label: 'Class',              key: 'class',   sortable: true,  thClass: ''                          },
+    { label: 'T-Shirt',            key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap w-28'    },
+    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: 'w-36 max-w-[144px]'        },
   ];
 
   function SortIcon({ col }: { col: string }) {
@@ -657,11 +657,11 @@ export default function CheckInPage() {
                     <th className="px-4 pb-1 pt-3" />
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {SORTABLE_COLS.map(({ label, key, sortable }) => (
+                    {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
-                        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
+                        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                       >
                         <span className="inline-flex items-center">
                           {label}{sortable && <SortIcon col={key} />}
@@ -755,7 +755,7 @@ export default function CheckInPage() {
                       {/* T-Shirt */}
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{child.tshirt_size}</td>
                       {/* Allergies */}
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="w-36 max-w-[144px] truncate px-4 py-3 text-slate-600">
                         {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Multi-column history (All tab) */}
