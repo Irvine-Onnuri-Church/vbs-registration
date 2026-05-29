@@ -679,7 +679,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div className="w-full overflow-x-auto px-6 pb-2">
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 300px)', paddingLeft: '24px', paddingRight: '24px' }}>
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
@@ -691,7 +691,7 @@ export default function CheckInPage() {
               <col style={{ width: '150px' }} />
               <col style={{ width: '148px' }} />
             </colgroup>
-            <thead>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               <tr className="border-b border-slate-200 bg-slate-50/60">
                 {([
                   { label: 'Student Name', key: 'last_name',  sortable: true  },
@@ -740,20 +740,8 @@ export default function CheckInPage() {
 
         {/* ── Regular check-in / goodie-bag table ───────────────────────── */}
         {!isAllergyTab && (
-          <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
-            <colgroup>
-              <col style={{ width: '65px' }} />
-              <col style={{ width: '150px' }} />
-              <col style={{ width: '82px' }} />
-              <col style={{ width: '46px' }} />
-              <col style={{ width: '106px' }} />
-              <col style={{ width: '106px' }} />
-              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '58px' }} />)}
-              {hasGapCol && <col style={{ width: '14px' }} />}
-              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '58px' }} />)}
-              {showActionCol && <col style={{ width: '112px' }} />}
-            </colgroup>
-            <thead>
+          <table className="text-left" style={{ tableLayout: 'auto' }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
                   <tr className="bg-slate-50/60">
@@ -846,7 +834,6 @@ export default function CheckInPage() {
                 const isPickedUp        = viewMode === 'goodiebag' && hasAnyPickup(child);
                 const loadKey           = `${reg.id}-${childIndex}`;
                 const isLoading         = loadingCheckin === loadKey;
-                const hasAllergy        = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
                 const proxyChildren     = (child.check_in?.proxy_children ?? []).filter(Boolean);
                 const isProxyPickup     = isCheckedIn && proxyChildren.length > 0;
                 const pickupAltChildren = viewMode === 'goodiebag' ? getPickupAlternateChildren(child) : [];
@@ -870,21 +857,21 @@ export default function CheckInPage() {
                       }
                     >
                       {/* Grade */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{child.grade}</td>
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">{child.grade}</td>
                       {/* Student Name */}
-                      <td className="truncate py-2 px-1.5 text-xs font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
                       {/* DOB */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Gender */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
                         {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Parent */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{reg.parent_name}</td>
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">{reg.parent_name}</td>
                       {/* Mobile */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
+                      <td className="whitespace-nowrap py-2 px-1.5 text-sm text-slate-600">
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Multi-column history (All tab) */}

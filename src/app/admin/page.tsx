@@ -1000,7 +1000,7 @@ export default function AdminPage() {
           )}
 
           {registrations.length > 0 && (
-            <table className="w-full text-left text-base">
+            <table className="w-full text-left text-sm">
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr className="border-b border-slate-200 bg-slate-50 text-sm font-semibold uppercase tracking-wider text-slate-500">
                   {[
