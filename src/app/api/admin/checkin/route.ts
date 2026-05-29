@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 
 import { getAdminDb } from '@/lib/firebase';
 
-/** POST — toggle check-in for a specific child within a registration */
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const session = cookieStore.get('admin_session');
@@ -12,7 +11,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { registrationId, childIndex, checkedIn, proxyChildren } = await request.json();
+    const { registrationId, childIndex, checkedIn, proxyChildren, mode } = await request.json();
+    const effectiveMode: 'checkin' | 'goodiebag' = mode === 'goodiebag' ? 'goodiebag' : 'checkin';
 
     if (!registrationId || childIndex === undefined || checkedIn === undefined) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
@@ -33,16 +33,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid child index.' }, { status: 400 });
     }
 
-    children[childIndex] = {
-      ...children[childIndex],
-      check_in: checkedIn
-        ? {
-            checked_in: true,
-            timestamp: new Date().toISOString(),
-            ...(Array.isArray(proxyChildren) && proxyChildren.length ? { proxy_children: proxyChildren } : {}),
-          }
-        : { checked_in: false, timestamp: null },
-    };
+    const today = new Date().toISOString().slice(0, 10);
+    const sessionKey = `${today}_${effectiveMode}`;
+    const existingSessions: Record<string, unknown> = { ...(children[childIndex].sessions || {}) };
+
+    if (effectiveMode === 'goodiebag') {
+      existingSessions[sessionKey] = checkedIn
+        ? { status: 'picked_up', by: null, at: new Date().toISOString() }
+        : null;
+
+      children[childIndex] = {
+        ...children[childIndex],
+        sessions: existingSessions,
+      };
+    } else {
+      existingSessions[sessionKey] = checkedIn
+        ? { status: 'checked_in', by: null, at: new Date().toISOString() }
+        : null;
+
+      children[childIndex] = {
+        ...children[childIndex],
+        check_in: checkedIn
+          ? {
+              checked_in: true,
+              timestamp: new Date().toISOString(),
+              ...(Array.isArray(proxyChildren) && proxyChildren.length ? { proxy_children: proxyChildren } : {}),
+            }
+          : { checked_in: false, timestamp: null },
+        sessions: existingSessions,
+      };
+    }
 
     await docRef.update({ children });
 

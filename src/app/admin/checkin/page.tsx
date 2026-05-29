@@ -4,6 +4,16 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Session = {
+  status: 'checked_in' | 'picked_up';
+  by: string | null;
+  at: string;
+  pickup_type?: 'parent' | 'alternate';
+  alternate_children?: { name: string; grade: string }[];
+};
+
 type Child = {
   first_name: string;
   last_name: string;
@@ -22,6 +32,7 @@ type Child = {
     timestamp: string | null;
     proxy_children?: { name: string; grade: string }[] | null;
   };
+  sessions?: Record<string, Session | null>;
 };
 
 type Registration = {
@@ -32,78 +43,88 @@ type Registration = {
   children: Child[];
 };
 
-type FlatRow = {
-  reg: Registration;
-  child: Child;
-  childIndex: number;
+type FlatRow       = { reg: Registration; child: Child; childIndex: number };
+type FilterMode    = 'all' | 'remaining' | 'checked_in' | 'has_allergies';
+type PickupType    = 'parent' | 'friend';
+type ViewMode      = 'checkin' | 'goodiebag';
+type ConfirmData   = {
+  regId: string; childIndex: number; childName: string;
+  grade: string; tshirtSize: string; parentName: string;
+  mode: ViewMode;
 };
 
-type FilterMode = 'all' | 'remaining' | 'checked_in' | 'has_allergies';
-type PickupType = 'parent' | 'friend';
+// ─── Helper ──────────────────────────────────────────────────────────────────
+
+function getChildSessions(child: Child): Record<string, Session | null> {
+  const sessions: Record<string, Session | null> = { ...(child.sessions ?? {}) };
+  if (child.check_in?.checked_in && child.check_in.timestamp) {
+    const legacyKey = `${child.check_in.timestamp.slice(0, 10)}_checkin`;
+    if (!sessions[legacyKey]) {
+      sessions[legacyKey] = { status: 'checked_in', by: null, at: child.check_in.timestamp };
+    }
+  }
+  return sessions;
+}
+
+function formatDateCol(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CheckInPage() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  // Auth
+  const [authenticated, setAuthenticated]     = useState(false);
+  const [checkingSession, setCheckingSession]   = useState(true);
+  const [password, setPassword]               = useState('');
+  const [authError, setAuthError]             = useState('');
+  const [authLoading, setAuthLoading]         = useState(false);
 
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [loadingCheckin, setLoadingCheckin] = useState<string | null>(null);
+  // Data
+  const [registrations, setRegistrations]     = useState<Registration[]>([]);
+  const [dataLoading, setDataLoading]         = useState(false);
+  const [searchQuery, setSearchQuery]         = useState('');
+  const [filterMode, setFilterMode]           = useState<FilterMode>('all');
+  const [loadingCheckin, setLoadingCheckin]   = useState<string | null>(null);
 
-  // Confirm undo popup state
-  const [confirmData, setConfirmData] = useState<{ regId: string; childIndex: number; childName: string; grade: string; tshirtSize: string; parentName: string } | null>(null);
+  // View mode
+  const [viewMode, setViewMode]               = useState<ViewMode>('checkin');
 
-  // Modal state
-  const [modalData, setModalData] = useState<{ reg: Registration; childIndex: number } | null>(null);
-  const [modalStep, setModalStep] = useState<1 | 2 | 3>(1);
-  const [pickupType, setPickupType] = useState<PickupType | null>(null);
-  const [step2Rows, setStep2Rows] = useState<{ name: string; grade: string }[]>([{ name: '', grade: '' }]);
+  // Confirm popup
+  const [confirmData, setConfirmData]         = useState<ConfirmData | null>(null);
+
+  // Check-in modal
+  const [modalData, setModalData]             = useState<{ reg: Registration; childIndex: number } | null>(null);
+  const [modalStep, setModalStep]             = useState<1 | 2 | 3>(1);
+  const [pickupType, setPickupType]           = useState<PickupType | null>(null);
+  const [step2Rows, setStep2Rows]             = useState<{ name: string; grade: string }[]>([{ name: '', grade: '' }]);
   const [openDropdownIdx, setOpenDropdownIdx] = useState<number | null>(null);
+  const [modalMode, setModalMode]             = useState<ViewMode>('checkin');
 
   const GRADES = ['Pre-K', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 
   const fetchRegistrations = useCallback(async () => {
-    const regRes = await fetch('/api/admin/registrations', { cache: 'no-store' });
-    if (regRes.ok) {
-      const data = await regRes.json();
+    const res = await fetch('/api/admin/registrations', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
       setRegistrations(data.registrations);
     }
   }, []);
 
-  function openCheckInModal(reg: Registration, childIndex: number) {
-    setModalData({ reg, childIndex });
-    setModalStep(1);
-    setPickupType(null);
-    setStep2Rows([{ name: '', grade: '' }]);
-    setOpenDropdownIdx(null);
-  }
-
-  function closeModal() {
-    setModalData(null);
-    setPickupType(null);
-    setModalStep(1);
-    setStep2Rows([{ name: '', grade: '' }]);
-    setOpenDropdownIdx(null);
-  }
-
-  async function handleModalNext() {
-    if (!modalData || !pickupType) return;
-    if (pickupType === 'parent') {
-      await toggleCheckIn(modalData.reg.id, modalData.childIndex, false);
-      closeModal();
-    } else {
-      setModalStep(2);
-    }
-  }
+  useEffect(() => { checkSession(); }, []);
 
   useEffect(() => {
-    checkSession();
-  }, []);
-
+    if (!modalData || modalStep !== 3 || modalMode !== 'goodiebag') return;
+    const timer = setTimeout(() => {
+      setModalData(null);
+      setPickupType(null);
+      setModalStep(1);
+      setStep2Rows([{ name: '', grade: '' }]);
+      setOpenDropdownIdx(null);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [modalData, modalStep, modalMode]);
 
   async function checkSession() {
     try {
@@ -123,20 +144,17 @@ export default function CheckInPage() {
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
-
     const res = await fetch('/api/admin/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
-
     if (!res.ok) {
       const data = await res.json();
       setAuthError(data.error);
       setAuthLoading(false);
       return;
     }
-
     setAuthenticated(true);
     setAuthLoading(false);
     setDataLoading(true);
@@ -144,7 +162,55 @@ export default function CheckInPage() {
     setDataLoading(false);
   }
 
-  async function toggleCheckIn(regId: string, childIndex: number, currentlyCheckedIn: boolean, proxyChildren?: { name: string; grade: string }[]) {
+  function openCheckInModal(reg: Registration, childIndex: number) {
+    setModalData({ reg, childIndex });
+    setModalMode('checkin');
+    setModalStep(1);
+    setPickupType(null);
+    setStep2Rows([{ name: '', grade: '' }]);
+    setOpenDropdownIdx(null);
+  }
+
+  function openGoodieBagModal(reg: Registration, childIndex: number) {
+    setModalData({ reg, childIndex });
+    setModalMode('goodiebag');
+    setModalStep(1);
+    setPickupType(null);
+    setStep2Rows([{ name: '', grade: '' }]);
+    setOpenDropdownIdx(null);
+  }
+
+  function closeModal() {
+    setModalData(null);
+    setPickupType(null);
+    setModalStep(1);
+    setStep2Rows([{ name: '', grade: '' }]);
+    setOpenDropdownIdx(null);
+  }
+
+  async function handleModalNext() {
+    if (!modalData || !pickupType) return;
+    if (pickupType === 'parent') {
+      if (modalMode === 'goodiebag') {
+        await toggleCheckIn(modalData.reg.id, modalData.childIndex, false, undefined, 'goodiebag', 'parent');
+        setModalStep(3);
+      } else {
+        await toggleCheckIn(modalData.reg.id, modalData.childIndex, false, undefined, 'checkin');
+        closeModal();
+      }
+    } else {
+      setModalStep(2);
+    }
+  }
+
+  async function toggleCheckIn(
+    regId: string,
+    childIndex: number,
+    currentlyCheckedIn: boolean,
+    proxyChildren?: { name: string; grade: string }[],
+    mode: ViewMode = 'checkin',
+    pickupType?: 'parent' | 'alternate',
+  ) {
     const key = `${regId}-${childIndex}`;
     setLoadingCheckin(key);
 
@@ -155,58 +221,115 @@ export default function CheckInPage() {
         registrationId: regId,
         childIndex,
         checkedIn: !currentlyCheckedIn,
+        mode,
         ...(proxyChildren?.length ? { proxyChildren } : {}),
+        ...(pickupType ? { pickupType } : {}),
       }),
     });
 
     if (res.ok) {
-      // Optimistic update — instant UI feedback
+      const today = new Date().toISOString().slice(0, 10);
+      const sessionKey = `${today}_${mode}`;
       setRegistrations((prev) =>
         prev.map((reg) => {
           if (reg.id !== regId) return reg;
-          const updatedChildren = reg.children.map((child, i) => {
-            if (i !== childIndex) return child;
-            return {
-              ...child,
-              check_in: {
-                checked_in: !currentlyCheckedIn,
-                timestamp: !currentlyCheckedIn ? new Date().toISOString() : null,
-                ...(!currentlyCheckedIn && proxyChildren?.length ? { proxy_children: proxyChildren } : {}),
-              },
-            };
-          });
-          return { ...reg, children: updatedChildren };
+          return {
+            ...reg,
+            children: reg.children.map((child, i) => {
+              if (i !== childIndex) return child;
+              const updatedSessions: Record<string, Session | null> = {
+                ...(child.sessions ?? {}),
+                [sessionKey]: !currentlyCheckedIn
+                  ? { status: mode === 'goodiebag' ? 'picked_up' : 'checked_in', by: null, at: new Date().toISOString() }
+                  : null,
+              };
+              if (mode === 'goodiebag') {
+                return { ...child, sessions: updatedSessions };
+              }
+              return {
+                ...child,
+                check_in: {
+                  checked_in: !currentlyCheckedIn,
+                  timestamp: !currentlyCheckedIn ? new Date().toISOString() : null,
+                  ...(!currentlyCheckedIn && proxyChildren?.length ? { proxy_children: proxyChildren } : {}),
+                },
+                sessions: updatedSessions,
+              };
+            }),
+          };
         }),
       );
     }
-
     setLoadingCheckin(null);
   }
 
-  // Build flat rows (active children only)
+  function switchMode(newMode: ViewMode) {
+    setViewMode(newMode);
+    setFilterMode('all');
+  }
+
+  // ─── Derived data ─────────────────────────────────────────────────────────
+
   const allRows: FlatRow[] = registrations.flatMap((reg) =>
     reg.children
       .map((child, idx) => ({ reg, child, childIndex: idx }))
       .filter(({ child }) => !child.canceled),
   );
 
-  // Filter
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  const showMultiColumns = filterMode === 'all';
+
+  const FIXED_GOODIEBAG_DATES = ['2026-05-17'];
+
+  const goodieBagDates = showMultiColumns ? [...new Set([
+    ...FIXED_GOODIEBAG_DATES,
+    ...allRows.flatMap(({ child }) =>
+      Object.entries(child.sessions ?? {})
+        .filter(([k, v]) => k.endsWith('_goodiebag') && v !== null)
+        .map(([k]) => k.replace('_goodiebag', '')),
+    ),
+  ])].sort() : [];
+
+  const FIXED_CHECKIN_DATES = ['2026-06-10'];
+
+  const checkinDates = showMultiColumns ? [...new Set([
+    ...FIXED_CHECKIN_DATES,
+    ...allRows.flatMap(({ child }) =>
+      Object.entries(getChildSessions(child))
+        .filter(([k, v]) => k.endsWith('_checkin') && v !== null)
+        .map(([k]) => k.replace('_checkin', '')),
+    ),
+  ])].sort() : [];
+
+  const totalCols = showMultiColumns
+    ? 7 + goodieBagDates.length + checkinDates.length
+    : 7;
+
+  function hasAnyPickup(child: Child): boolean {
+    return Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up');
+  }
+
   const filteredRows = allRows.filter(({ child }) => {
-    if (filterMode === 'remaining' && child.check_in?.checked_in) return false;
-    if (filterMode === 'checked_in' && !child.check_in?.checked_in) return false;
+    if (filterMode === 'remaining') {
+      if (viewMode === 'checkin' && child.check_in?.checked_in) return false;
+      if (viewMode === 'goodiebag' && hasAnyPickup(child)) return false;
+    }
+    if (filterMode === 'checked_in') {
+      if (viewMode === 'checkin' && !child.check_in?.checked_in) return false;
+      if (viewMode === 'goodiebag' && !hasAnyPickup(child)) return false;
+    }
     if (filterMode === 'has_allergies') {
-      const hasAllergy = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
-      if (!hasAllergy) return false;
+      const ok = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
+      if (!ok) return false;
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const childName = `${child.first_name} ${child.last_name}`.toLowerCase();
-      if (!childName.includes(q)) return false;
+      if (!`${child.first_name} ${child.last_name}`.toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
-  // Sort by grade then name
   const gradeOrder: Record<string, number> = {
     'Pre-K': 0, 'Transitional Kindergarten': 1, 'Kindergarten': 2,
     '1st Grade': 3, '2nd Grade': 4, '3rd Grade': 5,
@@ -216,34 +339,32 @@ export default function CheckInPage() {
     const ga = gradeOrder[a.child.grade] ?? 99;
     const gb = gradeOrder[b.child.grade] ?? 99;
     if (ga !== gb) return ga - gb;
-    const na = `${a.child.first_name} ${a.child.last_name}`.toLowerCase();
-    const nb = `${b.child.first_name} ${b.child.last_name}`.toLowerCase();
-    return na.localeCompare(nb);
+    return `${a.child.first_name} ${a.child.last_name}`.localeCompare(`${b.child.first_name} ${b.child.last_name}`);
   });
 
-  // Stats
-  const totalChildren = allRows.length;
-  const checkedInCount = allRows.filter(({ child }) => child.check_in?.checked_in).length;
-  const remainingCount = totalChildren - checkedInCount;
+  const totalChildren   = allRows.length;
+  const checkedInCount  = allRows.filter(({ child }) => child.check_in?.checked_in).length;
+  const pickedUpCount   = allRows.filter(({ child }) => hasAnyPickup(child)).length;
+  const activeCount     = viewMode === 'goodiebag' ? pickedUpCount : checkedInCount;
+  const remainingCount  = totalChildren - activeCount;
 
-  // Per-class stats
-  const classStats = (() => {
-    const classes = ['beginner', 'regular', 'appletree'] as const;
-    return classes.map((cls) => {
-      const rows = allRows.filter(({ child }) => (child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular')) === cls);
-      const checked = rows.filter(({ child }) => child.check_in?.checked_in).length;
-      return { key: cls, total: rows.length, checked };
-    }).filter((s) => s.total > 0);
-  })();
+  const classStats = (['beginner', 'regular', 'appletree'] as const).map((cls) => {
+    const rows = allRows.filter(({ child }) => (child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular')) === cls);
+    const cnt  = viewMode === 'goodiebag'
+      ? rows.filter(({ child }) => hasAnyPickup(child)).length
+      : rows.filter(({ child }) => child.check_in?.checked_in).length;
+    return { key: cls, total: rows.length, cnt };
+  }).filter((s) => s.total > 0);
 
   const filterButtons: { key: FilterMode; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'remaining', label: 'Remaining' },
-    { key: 'checked_in', label: 'Checked in' },
+    { key: 'all',          label: 'All' },
+    { key: 'remaining',    label: 'Remaining' },
+    { key: 'checked_in',   label: viewMode === 'goodiebag' ? 'Picked up' : 'Checked in' },
     { key: 'has_allergies', label: 'Allergies/ Medical' },
   ];
 
-  // ── Checking session ──
+  // ─── Session loading ──────────────────────────────────────────────────────
+
   if (checkingSession) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
@@ -252,7 +373,8 @@ export default function CheckInPage() {
     );
   }
 
-  // ── Login screen ──
+  // ─── Login screen ─────────────────────────────────────────────────────────
+
   if (!authenticated) {
     return (
       <div className="mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col items-center justify-center px-4 py-16">
@@ -293,10 +415,12 @@ export default function CheckInPage() {
     );
   }
 
-  // ── Check-in Dashboard ──
+  // ─── Dashboard ────────────────────────────────────────────────────────────
+
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-10 sm:px-6 lg:px-8 space-y-8">
-      {/* Header */}
+
+      {/* Page header */}
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Check-in</h1>
@@ -313,8 +437,10 @@ export default function CheckInPage() {
             <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
           </div>
           <div className="p-5 px-6">
-            <p className="text-sm font-semibold text-slate-500">Checked in</p>
-            <p className="mt-1 text-3xl font-bold text-emerald-600">{checkedInCount}</p>
+            <p className="text-sm font-semibold text-slate-500">
+              {viewMode === 'goodiebag' ? 'Picked up' : 'Checked in'}
+            </p>
+            <p className="mt-1 text-3xl font-bold text-emerald-600">{activeCount}</p>
           </div>
           <div className="p-5 px-6">
             <p className="text-sm font-semibold text-slate-500">Remaining</p>
@@ -322,48 +448,99 @@ export default function CheckInPage() {
           </div>
         </div>
         <div className="grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200">
-          {classStats.map(({ key, total, checked }) => (
+          {classStats.map(({ key, total, cnt }) => (
             <div key={key} className="p-5 px-6">
-              <p className="text-sm font-semibold text-slate-500 capitalize">{key === 'appletree' ? 'Apple Tree' : key} VBS</p>
-              <p className="mt-1 text-3xl font-bold text-slate-900">{checked}<span className="text-lg text-slate-400">/{total}</span></p>
+              <p className="text-sm font-semibold text-slate-500 capitalize">
+                {key === 'appletree' ? 'Apple Tree' : key} VBS
+              </p>
+              <p className="mt-1 text-3xl font-bold text-slate-900">
+                {cnt}<span className="text-lg text-slate-400">/{total}</span>
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Search + filters + table */}
+      {/* Table card */}
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-        {/* Search bar */}
+
+        {/* Search + filter bar */}
         <div className="border-b border-slate-200 px-4 py-4 space-y-3">
-          <div className="relative max-w-sm">
-            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by child name..."
-              className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-            />
+
+          {/* Row 1: search input + mode toggle buttons */}
+          <div className="flex items-center gap-4">
+            <div className="relative max-w-sm flex-1">
+              <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by child name..."
+                className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+              />
+            </div>
+
+            {/* 48 px circular mode toggle buttons */}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => switchMode('checkin')}
+                title="VBS Check-in"
+                className="flex items-center justify-center"
+                style={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  backgroundColor: viewMode === 'checkin' ? '#0f1e5e' : '#f1f5f9',
+                  boxShadow: viewMode === 'checkin' ? '0 0 0 2.5px #378ADD' : 'none',
+                  color: viewMode === 'checkin' ? '#ffffff' : '#94a3b8',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </button>
+              <button
+                onClick={() => switchMode('goodiebag')}
+                title="Goodie Bag Pickup"
+                className="flex items-center justify-center"
+                style={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  backgroundColor: viewMode === 'goodiebag' ? '#0f1e5e' : '#f1f5f9',
+                  boxShadow: viewMode === 'goodiebag' ? '0 0 0 2.5px #378ADD' : 'none',
+                  color: viewMode === 'goodiebag' ? '#ffffff' : '#94a3b8',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 12v10H4V12" />
+                  <path d="M22 7H2v5h20V7z" />
+                  <path d="M12 22V7" />
+                  <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
+                  <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* Filter chips */}
+          {/* Row 2: filter chips + session selector + count */}
           <div className="flex flex-wrap items-center gap-2">
             {filterButtons.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilterMode(key)}
                 className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-                  filterMode === key
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  filterMode === key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {label}
               </button>
             ))}
             {dataLoading && <span className="text-sm text-slate-400">Loading...</span>}
+
+
             <span className="ml-auto text-sm text-slate-500">
               {filteredRows.length} of {totalChildren} children
             </span>
@@ -374,51 +551,130 @@ export default function CheckInPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-base">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/60">
-                {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies', ''].map((col) => (
-                  <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    {col}
-                  </th>
-                ))}
-              </tr>
+              {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
+                <>
+                  <tr className="bg-slate-50/60">
+                    <th colSpan={6} className="px-4 pb-1 pt-3" />
+                    {goodieBagDates.length > 0 && (
+                      <th
+                        colSpan={goodieBagDates.length}
+                        className="border-b border-amber-200 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 12v10H4V12" />
+                            <path d="M22 7H2v5h20V7z" />
+                            <path d="M12 22V7" />
+                            <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
+                            <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+                          </svg>
+                          Goodie Bag
+                        </span>
+                      </th>
+                    )}
+                    {checkinDates.length > 0 && (
+                      <th
+                        colSpan={checkinDates.length}
+                        className="border-b border-teal-200 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-teal-600"
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                          <span className="whitespace-nowrap">VBS Check-in</span>
+                        </span>
+                      </th>
+                    )}
+                    <th className="px-4 pb-1 pt-3" />
+                  </tr>
+                  <tr className="border-b border-slate-200 bg-slate-50/60">
+                    {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies/ Medical'].map((col) => (
+                      <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        {col}
+                      </th>
+                    ))}
+                    {goodieBagDates.map((date) => (
+                      <th key={`gb-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-amber-500">
+                        {formatDateCol(date)}
+                      </th>
+                    ))}
+                    {checkinDates.map((date) => (
+                      <th key={`ci-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-teal-500">
+                        {formatDateCol(date)}
+                      </th>
+                    ))}
+                    <th className="px-4 py-3" />
+                  </tr>
+                </>
+              ) : (
+                <tr className="border-b border-slate-200 bg-slate-50/60">
+                  {['Child', 'Parent', 'Grade', 'Class', 'T-Shirt', 'Allergies/ Medical'].map((col) => (
+                    <th key={col} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      {col}
+                    </th>
+                  ))}
+                  <th className="px-4 py-3" />
+                </tr>
+              )}
             </thead>
             <tbody>
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">
+                  <td colSpan={totalCols} className="px-4 py-12 text-center text-sm text-slate-400">
                     {searchQuery ? 'No children match your search.' : 'No children found.'}
                   </td>
                 </tr>
               )}
               {filteredRows.map(({ reg, child, childIndex }) => {
-                const isCheckedIn = !!child.check_in?.checked_in;
-                const loadKey = `${reg.id}-${childIndex}`;
-                const isLoading = loadingCheckin === loadKey;
-                const hasAllergy = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
-                const proxyChildren = (child.check_in?.proxy_children ?? []).filter(Boolean);
-                const isProxyPickup = isCheckedIn && proxyChildren.length > 0;
+                const isCheckedIn    = !!child.check_in?.checked_in;
+                const todayGBKey     = `${todayKey}_goodiebag`;
+                const isPickedUpToday = !!child.sessions?.[todayGBKey]?.status;
+                const loadKey        = `${reg.id}-${childIndex}`;
+                const isLoading      = loadingCheckin === loadKey;
+                const hasAllergy     = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
+                const proxyChildren  = (child.check_in?.proxy_children ?? []).filter(Boolean);
+                const isProxyPickup  = isCheckedIn && proxyChildren.length > 0;
+                const rowActive      = viewMode === 'goodiebag' ? isPickedUpToday : isCheckedIn;
 
                 return (
                   <Fragment key={loadKey}>
                     <tr
-                      className={`transition ${isProxyPickup ? '' : 'border-b border-slate-100 ' + (isCheckedIn ? 'bg-emerald-50/50' : 'hover:bg-slate-50')}`}
-                      style={isProxyPickup ? { backgroundColor: '#f0faf6' } : undefined}
+                      className={`transition ${
+                        !showMultiColumns && viewMode === 'checkin' && isProxyPickup
+                          ? ''
+                          : `border-b border-slate-100 ${!showMultiColumns && rowActive ? '' : 'hover:bg-slate-50'}`
+                      }`}
+                      style={
+                        !showMultiColumns && viewMode === 'checkin' && isProxyPickup
+                          ? { backgroundColor: '#f0faf6' }
+                          : !showMultiColumns && rowActive
+                          ? { backgroundColor: 'rgba(236, 253, 245, 0.5)' }
+                          : undefined
+                      }
                     >
+                      {/* Child */}
                       <td className="px-4 py-3">
                         <span className="font-semibold text-slate-900">
                           {child.first_name} {child.last_name}
                         </span>
                       </td>
+                      {/* Parent */}
                       <td className="px-4 py-3 text-slate-600">{reg.parent_name}</td>
+                      {/* Grade */}
                       <td className="px-4 py-3 text-slate-600">{child.grade}</td>
+                      {/* Class */}
                       <td className="px-4 py-3">
                         {child.class === 'appletree' ? (
-                          <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Apple Tree</span>
+                          <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                            Apple Tree
+                          </span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
+                      {/* T-Shirt */}
                       <td className="px-4 py-3 text-slate-600">{child.tshirt_size}</td>
+                      {/* Allergies */}
                       <td className="px-4 py-3">
                         {hasAllergy ? (
                           <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
@@ -428,8 +684,64 @@ export default function CheckInPage() {
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
+                      {/* Multi-column history (All tab) */}
+                      {showMultiColumns && (
+                        <>
+                          {goodieBagDates.map((date) => {
+                            const s = child.sessions?.[`${date}_goodiebag`];
+                            return (
+                              <td key={`gb-${date}`} className="px-4 py-3 text-center">
+                                {s ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                                    Picked up
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          {checkinDates.map((date) => {
+                            const s = getChildSessions(child)[`${date}_checkin`];
+                            return (
+                              <td key={`ci-${date}`} className="px-4 py-3 text-center">
+                                {s ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
+                                    Checked in
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </>
+                      )}
+                      {/* Action column */}
                       <td className="px-4 py-3 text-right">
-                        {isProxyPickup ? (
+                        {!showMultiColumns && (viewMode === 'goodiebag' ? (
+                          <button
+                            onClick={() => isPickedUpToday
+                              ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })
+                              : openGoodieBagModal(reg, childIndex)
+                            }
+                            disabled={isLoading}
+                            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
+                              isPickedUpToday
+                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                : 'bg-slate-900 text-white hover:bg-slate-700'
+                            }`}
+                          >
+                            {isLoading ? 'Saving...' : isPickedUpToday ? (
+                              <>
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Picked up
+                              </>
+                            ) : 'Pick up'}
+                          </button>
+                        ) : isProxyPickup ? (
                           <div className="inline-flex items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full text-xs font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', padding: '3px 10px' }}>
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
@@ -438,7 +750,7 @@ export default function CheckInPage() {
                               Alternate Pickup
                             </span>
                             <button
-                              onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name })}
+                              onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
                               disabled={isLoading}
                               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50"
                               style={{ backgroundColor: '#e0f5ee', color: '#0F6E56', border: '1px solid #1D9E75' }}
@@ -456,7 +768,7 @@ export default function CheckInPage() {
                         ) : (
                           <button
                             onClick={() => isCheckedIn
-                              ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name })
+                              ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })
                               : openCheckInModal(reg, childIndex)
                             }
                             disabled={isLoading}
@@ -466,25 +778,23 @@ export default function CheckInPage() {
                                 : 'bg-slate-900 text-white hover:bg-slate-700 whitespace-nowrap'
                             }`}
                           >
-                            {isLoading ? (
-                              'Saving...'
-                            ) : isCheckedIn ? (
+                            {isLoading ? 'Saving...' : isCheckedIn ? (
                               <>
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Checked in
                               </>
-                            ) : (
-                              'Check in'
-                            )}
+                            ) : 'Check in'}
                           </button>
-                        )}
+                        ))}
                       </td>
                     </tr>
-                    {isProxyPickup && (
-                      <tr className="border-b border-slate-100" style={{ backgroundColor: '#f0faf6' }}>
-                        <td colSpan={7} style={{ padding: '0 20px 12px 20px' }}>
+
+                    {/* Proxy pickup side panel — check-in mode only */}
+                    {viewMode === 'checkin' && isProxyPickup && (
+                      <tr className="border-b border-slate-100" style={showMultiColumns ? undefined : { backgroundColor: '#f0faf6' }}>
+                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
                           <div style={{ backgroundColor: '#e8f4ff', borderLeft: '2px solid #378ADD', borderRadius: '0 8px 8px 0', padding: '8px 14px' }}>
                             <div className="mb-2 flex items-center gap-1.5">
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
@@ -519,7 +829,7 @@ export default function CheckInPage() {
         </div>
       </div>
 
-      {/* Confirm undo popup */}
+      {/* ── Confirm popup ───────────────────────────────────────────────────── */}
       {confirmData && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -530,7 +840,6 @@ export default function CheckInPage() {
             style={{ backgroundColor: '#1c1c1e', border: '1px solid #2a3a4a', borderRadius: '16px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* × close */}
             <button
               onClick={() => setConfirmData(null)}
               className="absolute -right-3 -top-3 flex items-center justify-center rounded-full text-white transition hover:opacity-80"
@@ -541,9 +850,10 @@ export default function CheckInPage() {
               </svg>
             </button>
 
-            <h3 className="mb-4 pr-6 text-base text-white" style={{ fontWeight: 500 }}>Cancel this check-in?</h3>
+            <h3 className="mb-4 pr-6 text-base text-white" style={{ fontWeight: 500 }}>
+              {confirmData.mode === 'goodiebag' ? 'Cancel this pickup?' : 'Cancel this check-in?'}
+            </h3>
 
-            {/* Child info card */}
             <div className="mb-6 flex items-center gap-3 rounded-[10px] px-[14px] py-3" style={{ backgroundColor: '#0f1c2a' }}>
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px]" style={{ backgroundColor: '#2e3d4f', color: '#8899aa', fontWeight: 500 }}>
                 {confirmData.childName.split(' ').map((p) => p[0] ?? '').filter((_, i, a) => i === 0 || i === a.length - 1).join('').toUpperCase()}
@@ -564,22 +874,24 @@ export default function CheckInPage() {
               </button>
               <button
                 onClick={async () => {
-                  await toggleCheckIn(confirmData.regId, confirmData.childIndex, true);
+                  await toggleCheckIn(confirmData.regId, confirmData.childIndex, true, undefined, confirmData.mode);
                   setConfirmData(null);
                 }}
                 disabled={loadingCheckin === `${confirmData.regId}-${confirmData.childIndex}`}
                 className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: '#E24B4A' }}
               >
-                {loadingCheckin === `${confirmData.regId}-${confirmData.childIndex}` ? 'Canceling...' : 'Cancel Check-in'}
+                {loadingCheckin === `${confirmData.regId}-${confirmData.childIndex}`
+                  ? 'Canceling...'
+                  : confirmData.mode === 'goodiebag' ? 'Cancel Pickup' : 'Cancel Check-in'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Check-in Modal */}
-      {modalData && (() => {
+      {/* ── Check-in modal (checkin mode only) ──────────────────────────────── */}
+      {viewMode === 'checkin' && modalData && (() => {
         const { reg, childIndex } = modalData;
         const child = reg.children[childIndex];
         const initials = `${child.first_name[0] ?? ''}${child.last_name[0] ?? ''}`.toUpperCase();
@@ -594,14 +906,10 @@ export default function CheckInPage() {
 
         return (
           <>
-            {/* Backdrop */}
             <div className="fixed inset-0 z-40 bg-black/60" onClick={closeModal} />
-
-            {/* Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="relative w-full max-w-lg rounded-3xl bg-[#1c1c1e] p-6 shadow-2xl">
 
-                {/* Close button */}
                 <button
                   onClick={closeModal}
                   className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700 text-white transition hover:bg-zinc-600"
@@ -611,20 +919,16 @@ export default function CheckInPage() {
                   </svg>
                 </button>
 
-                {/* Step progress bar */}
+                {/* Step progress */}
                 <div className="mb-6 flex items-center justify-center">
                   {steps.map((step, i) => {
                     const isActive = modalStep === step.num;
-                    const isDone = modalStep > step.num;
+                    const isDone   = modalStep > step.num;
                     return (
                       <div key={step.num} className="flex items-center">
                         <div className="flex items-center gap-2">
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
-                            isDone
-                              ? 'bg-teal-500 text-white'
-                              : isActive
-                              ? 'bg-[#1e3a6e] text-white'
-                              : 'border-2 border-slate-600 text-slate-500'
+                            isDone ? 'bg-teal-500 text-white' : isActive ? 'bg-[#1e3a6e] text-white' : 'border-2 border-slate-600 text-slate-500'
                           }`}>
                             {isDone ? (
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -636,15 +940,13 @@ export default function CheckInPage() {
                             {step.label}
                           </span>
                         </div>
-                        {i < steps.length - 1 && (
-                          <div className="mx-3 h-px w-8 bg-slate-600" />
-                        )}
+                        {i < steps.length - 1 && <div className="mx-3 h-px w-8 bg-slate-600" />}
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Child info card — Step 1 only */}
+                {/* Child info card — step 1 only */}
                 {modalStep === 1 && (
                   <div className="mb-5 flex items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-500/40 text-sm font-bold text-slate-100">
@@ -657,28 +959,18 @@ export default function CheckInPage() {
                   </div>
                 )}
 
-                {/* Step 1 */}
+                {/* Step 1 — who is checking in */}
                 {modalStep === 1 && (
                   <>
                     <h2 className="mb-1 text-lg font-bold text-white">Who is checking in?</h2>
                     <p className="mb-5 text-sm text-slate-400">Please select who is picking up the child.</p>
-
                     <div className="mb-6 grid grid-cols-2 gap-3">
-                      {/* 부모님 본인 */}
                       <button
                         onClick={() => setPickupType('parent')}
                         className="flex flex-col items-center gap-2 rounded-2xl border-2 px-4 py-5"
-                        style={{
-                          transition: 'all 0.15s ease',
-                          borderColor: pickupType === 'parent' ? '#1D9E75' : '#4b5563',
-                          backgroundColor: pickupType === 'parent' ? '#E1F5EE' : '#18181b',
-                        }}
+                        style={{ transition: 'all 0.15s ease', borderColor: pickupType === 'parent' ? '#1D9E75' : '#4b5563', backgroundColor: pickupType === 'parent' ? '#E1F5EE' : '#18181b' }}
                       >
-                        <svg
-                          className="h-8 w-8"
-                          style={{ color: pickupType === 'parent' ? '#1D9E75' : '#9ca3af' }}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
-                        >
+                        <svg className="h-8 w-8" style={{ color: pickupType === 'parent' ? '#1D9E75' : '#9ca3af' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <circle cx="12" cy="6.5" r="3.5" strokeLinecap="round" strokeLinejoin="round"/>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5.5 20c0-3.59 2.91-6.5 6.5-6.5"/>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M10 18l2.5 2.5 5.5-5.5"/>
@@ -688,23 +980,12 @@ export default function CheckInPage() {
                           <p className="text-xs" style={{ color: pickupType === 'parent' ? '#1D9E75' : '#9ca3af' }}>Registered guardian</p>
                         </div>
                       </button>
-
-                      {/* 부모님 지인 */}
                       <button
                         onClick={() => setPickupType('friend')}
                         className="flex flex-col items-center gap-2 rounded-2xl border-2 px-4 py-5"
-                        style={{
-                          transition: 'all 0.15s ease',
-                          borderColor: pickupType === 'friend' ? '#378ADD' : '#4b5563',
-                          backgroundColor: pickupType === 'friend' ? '#E6F1FB' : '#18181b',
-                        }}
+                        style={{ transition: 'all 0.15s ease', borderColor: pickupType === 'friend' ? '#378ADD' : '#4b5563', backgroundColor: pickupType === 'friend' ? '#E6F1FB' : '#18181b' }}
                       >
-                        <svg
-                          className="h-8 w-8"
-                          style={{ color: pickupType === 'friend' ? '#378ADD' : '#9ca3af' }}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}
-                          strokeLinecap="round" strokeLinejoin="round"
-                        >
+                        <svg className="h-8 w-8" style={{ color: pickupType === 'friend' ? '#378ADD' : '#9ca3af' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="9" cy="9.5" r="4"/>
                           <path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/>
                           <circle cx="16.5" cy="5.5" r="2.5"/>
@@ -719,34 +1000,26 @@ export default function CheckInPage() {
                   </>
                 )}
 
-                {/* Step 2 — 자녀 정보 */}
+                {/* Step 2 — child info for proxy */}
                 {modalStep === 2 && (
                   <>
-                    {/* Badge */}
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-2" style={{ backgroundColor: '#fdf0e0', color: '#7c4814' }}>
                       <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="9" cy="9.5" r="4"/>
-                        <path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/>
-                        <circle cx="16.5" cy="5.5" r="2.5"/>
-                        <path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                        <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                       </svg>
                       <span className="text-sm font-semibold">Alternate Pickup</span>
                     </div>
-
                     <h2 className="mb-1 text-lg font-bold text-white">Child Information</h2>
-                    <p className="mb-4 text-sm text-slate-400">Please enter the child's name and grade.</p>
+                    <p className="mb-4 text-sm text-slate-400">Please enter the child&apos;s name and grade.</p>
 
-                    {/* Column headers */}
                     <div className="mb-1.5 flex gap-2">
                       <span className="flex-1 pl-9 text-xs text-slate-400">Name</span>
                       <span className="flex-1 text-xs text-slate-400">Grade</span>
                     </div>
 
-                    {/* Rows */}
                     <div className="mb-3 space-y-2">
                       {step2Rows.map((row, idx) => (
                         <div key={idx} className="flex gap-2">
-                          {/* Name input with inset row number */}
                           <div className="relative flex-1">
                             <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 text-xs font-bold text-white">
                               {idx + 1}
@@ -763,18 +1036,12 @@ export default function CheckInPage() {
                               className="w-full rounded-xl bg-zinc-800 py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-slate-500"
                             />
                           </div>
-                          {/* Grade dropdown with inset delete button */}
                           <div className="relative flex-1">
                             <button
                               type="button"
                               onClick={() => setOpenDropdownIdx(openDropdownIdx === idx ? null : idx)}
                               className="w-full rounded-xl bg-zinc-800 py-2.5 text-left text-sm outline-none"
-                              style={{
-                                color: row.grade ? '#fff' : '#6b7280',
-                                border: `1px solid ${openDropdownIdx === idx ? '#378ADD' : 'transparent'}`,
-                                paddingLeft: '12px',
-                                paddingRight: step2Rows.length > 1 ? '32px' : '12px',
-                              }}
+                              style={{ color: row.grade ? '#fff' : '#6b7280', border: `1px solid ${openDropdownIdx === idx ? '#378ADD' : 'transparent'}`, paddingLeft: '12px', paddingRight: step2Rows.length > 1 ? '32px' : '12px' }}
                             >
                               {row.grade || 'Select grade'}
                             </button>
@@ -816,7 +1083,6 @@ export default function CheckInPage() {
                       ))}
                     </div>
 
-                    {/* Add child button */}
                     {step2Rows.length < 5 && (
                       <button
                         type="button"
@@ -829,7 +1095,7 @@ export default function CheckInPage() {
                   </>
                 )}
 
-                {/* Bottom buttons */}
+                {/* Modal bottom buttons */}
                 <div className="flex gap-3">
                   {modalStep === 1 ? (
                     <>
@@ -843,9 +1109,7 @@ export default function CheckInPage() {
                         onClick={handleModalNext}
                         disabled={!pickupType || isLoading}
                         className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white transition disabled:opacity-40"
-                        style={{
-                          backgroundColor: pickupType === 'parent' ? '#1D9E75' : '#1e3a6e',
-                        }}
+                        style={{ backgroundColor: pickupType === 'parent' ? '#1D9E75' : '#1e3a6e' }}
                       >
                         {isLoading ? 'Saving...' : pickupType === 'parent' ? 'Complete Check-in' : 'Next →'}
                       </button>
@@ -860,7 +1124,7 @@ export default function CheckInPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          await toggleCheckIn(reg.id, childIndex, false, step2Rows.filter((r) => r.name.trim()));
+                          await toggleCheckIn(reg.id, childIndex, false, step2Rows.filter((r) => r.name.trim()), 'checkin');
                           closeModal();
                         }}
                         disabled={isLoading}
