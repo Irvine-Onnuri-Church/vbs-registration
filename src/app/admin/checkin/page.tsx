@@ -684,7 +684,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
+        <div className="px-6" style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
