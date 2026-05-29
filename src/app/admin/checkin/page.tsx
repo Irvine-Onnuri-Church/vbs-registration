@@ -633,12 +633,13 @@ export default function CheckInPage() {
                 const isCheckedIn    = !!child.check_in?.checked_in;
                 const todayGBKey     = `${todayKey}_goodiebag`;
                 const isPickedUpToday = !!child.sessions?.[todayGBKey]?.status;
+                const isPickedUp      = viewMode === 'goodiebag' && hasAnyPickup(child);
                 const loadKey        = `${reg.id}-${childIndex}`;
                 const isLoading      = loadingCheckin === loadKey;
                 const hasAllergy     = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
                 const proxyChildren  = (child.check_in?.proxy_children ?? []).filter(Boolean);
                 const isProxyPickup  = isCheckedIn && proxyChildren.length > 0;
-                const rowActive      = viewMode === 'goodiebag' ? isPickedUpToday : isCheckedIn;
+                const rowActive      = viewMode === 'goodiebag' ? isPickedUp : isCheckedIn;
 
                 return (
                   <Fragment key={loadKey}>
@@ -652,7 +653,7 @@ export default function CheckInPage() {
                         !showMultiColumns && viewMode === 'checkin' && isProxyPickup
                           ? { backgroundColor: '#f0faf6' }
                           : !showMultiColumns && rowActive
-                          ? { backgroundColor: 'rgba(236, 253, 245, 0.5)' }
+                          ? { backgroundColor: viewMode === 'goodiebag' ? 'rgba(254, 243, 199, 0.4)' : 'rgba(236, 253, 245, 0.5)' }
                           : undefined
                       }
                     >
@@ -720,27 +721,28 @@ export default function CheckInPage() {
                       {/* Action column */}
                       <td className="px-4 py-3 text-right">
                         {!showMultiColumns && (viewMode === 'goodiebag' ? (
-                          <button
-                            onClick={() => isPickedUpToday
-                              ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })
-                              : openGoodieBagModal(reg, childIndex)
-                            }
-                            disabled={isLoading}
-                            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
-                              isPickedUpToday
-                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                                : 'bg-slate-900 text-white hover:bg-slate-700'
-                            }`}
-                          >
-                            {isLoading ? 'Saving...' : isPickedUpToday ? (
-                              <>
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                Picked up
-                              </>
-                            ) : 'Pick up'}
-                          </button>
+                          isPickedUp ? (
+                            <button
+                              onClick={() => isPickedUpToday
+                                ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })
+                                : undefined
+                              }
+                              disabled={isLoading || !isPickedUpToday}
+                              className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1.5 disabled:cursor-default"
+                            >
+                              <svg className="h-4 w-4 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openGoodieBagModal(reg, childIndex)}
+                              disabled={isLoading}
+                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+                            >
+                              {isLoading ? 'Saving...' : 'Pick up'}
+                            </button>
+                          )
                         ) : isProxyPickup ? (
                           <div className="inline-flex items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full text-xs font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', padding: '3px 10px' }}>
