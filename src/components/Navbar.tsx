@@ -11,11 +11,16 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin/auth')
-      .then((res) => {
-        setIsAdmin(res.ok);
-      })
-      .catch(() => setIsAdmin(false));
+    checkAdmin();
+
+    function checkAdmin() {
+      fetch('/api/admin/auth')
+        .then((res) => setIsAdmin(res.ok))
+        .catch(() => setIsAdmin(false));
+    }
+
+    window.addEventListener('admin-auth-changed', checkAdmin);
+    return () => window.removeEventListener('admin-auth-changed', checkAdmin);
   }, [pathname]);
 
   async function handleLogout() {

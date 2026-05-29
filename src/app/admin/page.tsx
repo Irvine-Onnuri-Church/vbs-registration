@@ -553,6 +553,7 @@ export default function AdminPage() {
     // Auth succeeded — show dashboard immediately, then load data
     setAuthenticated(true);
     setAuthLoading(false);
+    window.dispatchEvent(new Event('admin-auth-changed'));
     await fetchRegistrations();
   }
 
