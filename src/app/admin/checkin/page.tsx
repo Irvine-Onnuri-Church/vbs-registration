@@ -431,7 +431,7 @@ export default function CheckInPage() {
       {/* Page header */}
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Check-in</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">{viewMode === 'goodiebag' ? 'Goodie Bag Pick-up' : 'Check-in'}</h1>
         <p className="text-sm text-slate-500">
           {EVENT_INFO.name} · {EVENT_INFO.subtitle} · {EVENT_INFO.dates}
         </p>
