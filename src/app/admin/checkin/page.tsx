@@ -94,12 +94,56 @@ function getSortValue(row: FlatRow, col: string): string | number {
     case 'grade':   return GRADE_ORDER[row.child.grade] ?? 99;
     case 'class':   return row.child.class ?? '￿';
     case 'tshirt':  return TSHIRT_ORDER[row.child.tshirt_size] ?? 99;
+    case 'dob':     return row.child.date_of_birth ?? '9999-99-99';
+    case 'gender':  return (row.child.gender ?? '').toLowerCase();
     case 'allergy': {
       const v = row.child.allergy_information ?? '';
       return !!v && !/^(none|no|nope|na|n\/a|-)$/i.test(v.trim()) ? v.toLowerCase() : '￿';
     }
     default:        return '';
   }
+}
+
+function formatDob(dob: string): string {
+  const [year, month, day] = (dob ?? '').split('-');
+  return year && month && day ? `${month}/${day}/${year}` : dob ?? '';
+}
+
+function formatPhone(phone: string): string {
+  const digits = (phone ?? '').replace(/\D/g, '');
+  if (digits.length === 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  return phone ?? '';
+}
+
+function downloadCheckinCSV(rows: FlatRow[], viewMode: ViewMode) {
+  const escape = (val: string) => `"${String(val).replace(/"/g, '""')}"`;
+  const headers = [
+    'Child Name', 'Parent Name', 'Grade', 'Class', 'T-Shirt Size',
+    'DOB', 'Gender', 'Mobile', 'Allergies/Medical',
+    'Checked In', 'Goodie Bag Picked Up',
+  ];
+  const csvRows = rows.map(({ reg, child }) => [
+    `${child.first_name} ${child.last_name}`,
+    reg.parent_name,
+    child.grade,
+    child.class === 'appletree' ? 'Apple Tree' : (child.class ?? ''),
+    child.tshirt_size,
+    child.date_of_birth ? formatDob(child.date_of_birth) : '',
+    child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : (child.gender ?? ''),
+    formatPhone(reg.phone_number),
+    child.allergy_information ?? '',
+    child.check_in?.checked_in ? 'Yes' : 'No',
+    Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up') ? 'Yes' : 'No',
+  ]);
+  const csv = [headers, ...csvRows].map((row) => row.map(escape).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const label = viewMode === 'goodiebag' ? 'goodiebag' : 'checkin';
+  a.download = `vbs2026_${label}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -351,12 +395,24 @@ export default function CheckInPage() {
     ),
   ])].sort() : [];
 
+  const hasGapCol = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
+  const showAllergyCol = filterMode === 'has_allergies';
+  const staticColCount = showAllergyCol ? 9 : 8; // data cols excl. spacer/action
   const totalCols = showMultiColumns
-    ? 7 + goodieBagDates.length + checkinDates.length
-    : 7;
+    ? staticColCount + 2 + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
+    : staticColCount + 1;
 
   function hasAnyPickup(child: Child): boolean {
     return Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up');
+  }
+
+  function getPickupAlternateChildren(child: Child): { name: string; grade: string }[] {
+    for (const s of Object.values(child.sessions ?? {})) {
+      if (s?.status === 'picked_up' && s.pickup_type === 'alternate' && s.alternate_children?.length) {
+        return s.alternate_children;
+      }
+    }
+    return [];
   }
 
   const filteredRows = allRows.filter(({ child }) => {
@@ -417,8 +473,11 @@ export default function CheckInPage() {
     { label: 'Parent',             key: 'parent',  sortable: true,  thClass: ''                          },
     { label: 'Grade',              key: 'grade',   sortable: true,  thClass: ''                          },
     { label: 'Class',              key: 'class',   sortable: true,  thClass: ''                          },
-    { label: 'T-Shirt Size',        key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap'         },
-    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: 'w-28 max-w-[112px]'        },
+    { label: 'T-Shirt Size',       key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap'         },
+    { label: 'DOB',                key: 'dob',     sortable: true,  thClass: 'whitespace-nowrap'         },
+    { label: 'Gender',             key: 'gender',  sortable: true,  thClass: 'whitespace-nowrap'         },
+    { label: 'Mobile',             key: 'mobile',  sortable: false, thClass: 'whitespace-nowrap'         },
+    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: ''                          },
   ];
 
   function SortIcon({ col }: { col: string }) {
@@ -606,20 +665,45 @@ export default function CheckInPage() {
             {dataLoading && <span className="text-sm text-slate-400">Loading...</span>}
 
 
-            <span className="ml-auto text-sm text-slate-500">
-              {filteredRows.length} of {totalChildren} children
+            <span className="ml-auto flex items-center gap-3">
+              <button
+                onClick={() => downloadCheckinCSV(filteredRows, viewMode)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                CSV
+              </button>
+              <span className="text-sm text-slate-500">{filteredRows.length} of {totalChildren} children</span>
             </span>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-base">
+          <table className="w-full text-left text-base" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '180px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '60px' }} />
+              <col style={{ width: '120px' }} />
+              {showAllergyCol && <col style={{ width: '200px' }} />}
+              {showMultiColumns && <col />}{/* Auto spacer — fills remaining */}
+              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '80px' }} />)}
+              {hasGapCol && <col style={{ width: '32px' }} />}
+              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '80px' }} />)}
+              <col style={{ width: '120px' }} />
+            </colgroup>
             <thead>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
                   <tr className="bg-slate-50/60">
-                    <th colSpan={6} className="px-4 pb-1 pt-3" />
+                    <th colSpan={staticColCount + 1} className="px-4 pb-1 pt-3" />{/* static cols + spacer */}
                     {goodieBagDates.length > 0 && (
                       <th
                         colSpan={goodieBagDates.length}
@@ -639,6 +723,7 @@ export default function CheckInPage() {
                         </div>
                       </th>
                     )}
+                    {hasGapCol && <th className="p-0" />}
                     {checkinDates.length > 0 && (
                       <th
                         colSpan={checkinDates.length}
@@ -657,22 +742,24 @@ export default function CheckInPage() {
                     <th className="px-4 pb-1 pt-3" />
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
+                    {SORTABLE_COLS.filter((c) => showAllergyCol || c.key !== 'allergy').map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
-                        className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                        className={`overflow-hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                       >
                         <span className="inline-flex items-center whitespace-nowrap">
                           {label}{sortable && <SortIcon col={key} />}
                         </span>
                       </th>
                     ))}
+                    <th className="px-4 py-3" />{/* spacer */}
                     {goodieBagDates.map((date) => (
                       <th key={`gb-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-amber-500">
                         {formatDateCol(date)}
                       </th>
                     ))}
+                    {hasGapCol && <th className="p-0" />}
                     {checkinDates.map((date) => (
                       <th key={`ci-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-teal-500">
                         {formatDateCol(date)}
@@ -683,14 +770,14 @@ export default function CheckInPage() {
                 </>
               ) : (
                 <tr className="border-b border-slate-200 bg-slate-50/60">
-                  {SORTABLE_COLS.map(({ label, key }) => (
+                  {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
                     <th
                       key={key}
-                      onClick={() => handleSort(key)}
-                      className="cursor-pointer select-none px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600"
+                      onClick={sortable ? () => handleSort(key) : undefined}
+                      className={`overflow-hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                     >
-                      <span className="inline-flex items-center">
-                        {label}<SortIcon col={key} />
+                      <span className="inline-flex items-center whitespace-nowrap">
+                        {label}{sortable && <SortIcon col={key} />}
                       </span>
                     </th>
                   ))}
@@ -707,14 +794,16 @@ export default function CheckInPage() {
                 </tr>
               )}
               {filteredRows.map(({ reg, child, childIndex }) => {
-                const isCheckedIn    = !!child.check_in?.checked_in;
-                const isPickedUp      = viewMode === 'goodiebag' && hasAnyPickup(child);
-                const loadKey        = `${reg.id}-${childIndex}`;
-                const isLoading      = loadingCheckin === loadKey;
-                const hasAllergy     = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
-                const proxyChildren  = (child.check_in?.proxy_children ?? []).filter(Boolean);
-                const isProxyPickup  = isCheckedIn && proxyChildren.length > 0;
-                const rowActive      = viewMode === 'goodiebag' ? isPickedUp : isCheckedIn;
+                const isCheckedIn       = !!child.check_in?.checked_in;
+                const isPickedUp        = viewMode === 'goodiebag' && hasAnyPickup(child);
+                const loadKey           = `${reg.id}-${childIndex}`;
+                const isLoading         = loadingCheckin === loadKey;
+                const hasAllergy        = !!child.allergy_information && !/^(none|no|nope|na|n\/a|-)$/i.test(child.allergy_information.trim());
+                const proxyChildren     = (child.check_in?.proxy_children ?? []).filter(Boolean);
+                const isProxyPickup     = isCheckedIn && proxyChildren.length > 0;
+                const pickupAltChildren = viewMode === 'goodiebag' ? getPickupAlternateChildren(child) : [];
+                const isGoodieAlternate = pickupAltChildren.length > 0;
+                const rowActive         = viewMode === 'goodiebag' ? isPickedUp : isCheckedIn;
 
                 return (
                   <Fragment key={loadKey}>
@@ -754,22 +843,41 @@ export default function CheckInPage() {
                       </td>
                       {/* T-Shirt */}
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{child.tshirt_size}</td>
-                      {/* Allergies */}
-                      <td className="w-36 max-w-[144px] truncate px-4 py-3 text-slate-600">
-                        {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
+                      {/* DOB */}
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
                       </td>
+                      {/* Gender */}
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
+                      </td>
+                      {/* Mobile */}
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
+                      </td>
+                      {/* Allergies */}
+                      {showAllergyCol && (
+                        <td className="px-4 py-3 text-slate-600">
+                          {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
+                        </td>
+                      )}
                       {/* Multi-column history (All tab) */}
                       {showMultiColumns && (
                         <>
+                          <td className="p-0" />{/* spacer */}
                           {goodieBagDates.map((date) => {
                             const s = child.sessions?.[`${date}_goodiebag`];
+                            const isAlt = s?.pickup_type === 'alternate';
                             return (
                               <td key={`gb-${date}`} className="px-4 py-3 text-center">
                                 {s ? (
-                                  <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
-                                    <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
+                                  <span className="inline-flex flex-col items-center gap-0.5">
+                                    <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
+                                      <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </span>
+                                    {isAlt && <span className="text-[9px] font-medium text-amber-600">Alt</span>}
                                   </span>
                                 ) : (
                                   <span className="text-slate-300">—</span>
@@ -777,6 +885,7 @@ export default function CheckInPage() {
                               </td>
                             );
                           })}
+                          {hasGapCol && <td className="p-0" />}
                           {checkinDates.map((date) => {
                             const s = getChildSessions(child)[`${date}_checkin`];
                             return (
@@ -794,18 +903,24 @@ export default function CheckInPage() {
                         </>
                       )}
                       {/* Action column */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end">
                         {!showMultiColumns && (viewMode === 'goodiebag' ? (
                           isPickedUp ? (
-                            <button
-                              onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })}
-                              disabled={isLoading}
-                              className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1.5 transition hover:bg-amber-200 disabled:opacity-50"
-                            >
-                              <svg className="h-4 w-4 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
+                            isGoodieAlternate ? (
+                              <span className="inline-flex items-center gap-1.5 whitespace-nowrap" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', borderRadius: '999px', padding: '6px 14px', fontSize: '14px', fontWeight: 600 }}>
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Alternate Pickup
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#FEF3C7' }}>
+                                <svg className="h-4 w-4 shrink-0" style={{ color: '#854F0B' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                            )
                           ) : (
                             <button
                               onClick={() => openGoodieBagModal(reg, childIndex)}
@@ -862,8 +977,40 @@ export default function CheckInPage() {
                             ) : 'Check in'}
                           </button>
                         ))}
+                        </div>
                       </td>
                     </tr>
+
+                    {/* Alternate pickup panel — goodie bag mode */}
+                    {viewMode === 'goodiebag' && isGoodieAlternate && (
+                      <tr className="border-b border-slate-100">
+                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
+                          <div style={{ backgroundColor: '#E6F1FB', borderLeft: '2px solid #378ADD', borderRadius: '0 0 8px 8px', padding: '8px 14px' }}>
+                            <div className="mb-2 flex items-center gap-1.5">
+                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
+                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                              </svg>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {pickupAltChildren.map((pc, i) => {
+                                const parts = pc.name.trim().split(/\s+/);
+                                const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                                return (
+                                  <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
+                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
+                                      {initials}
+                                    </div>
+                                    <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
+                                    <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
 
                     {/* Proxy pickup side panel — check-in mode only */}
                     {viewMode === 'checkin' && isProxyPickup && (
