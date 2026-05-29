@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState, type CSSProperties } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
 
@@ -586,7 +586,7 @@ export default function CheckInPage() {
       </div>
 
       {/* Table card */}
-      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden bg-white shadow-sm" style={{ borderRadius: '8px', border: '0.5px solid #e5e7eb' }}>
 
         {/* Search + filter bar */}
         <div className="border-b border-slate-200 px-6 py-4 space-y-3">
@@ -684,7 +684,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div className="px-6" style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
+        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
@@ -697,7 +697,7 @@ export default function CheckInPage() {
               <col style={{ width: '148px' }} />
             </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr style={{ backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
                 {([
                   { label: 'Student Name', key: 'last_name',  sortable: true  },
                   { label: 'Grade',        key: 'grade',      sortable: true  },
@@ -708,7 +708,7 @@ export default function CheckInPage() {
                   <th
                     key={label}
                     onClick={sortable ? () => handleSort(key) : undefined}
-                    className={`truncate py-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
+                    style={{ padding: '10px 12px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, cursor: sortable ? 'pointer' : 'default', userSelect: sortable ? 'none' : undefined }}
                   >
                     <span className="inline-flex items-center whitespace-nowrap">
                       {label}{sortable && <SortIcon col={key} />}
@@ -717,7 +717,7 @@ export default function CheckInPage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">
@@ -726,12 +726,12 @@ export default function CheckInPage() {
                 </tr>
               )}
               {filteredRows.map(({ reg, child, childIndex: ci }) => (
-                <tr key={`${reg.id}-${ci}`} className="hover:bg-slate-50 cursor-pointer">
-                  <td className="py-4 px-3 text-[14px] font-bold text-slate-900">{child.last_name}, {child.first_name}</td>
-                  <td className="py-4 px-3 text-[14px] text-slate-500">{child.grade}</td>
-                  <td className="py-4 px-3 text-[14px] text-slate-800 whitespace-normal break-words">{child.allergy_information}</td>
-                  <td className="py-4 px-3 text-[14px] text-slate-500">{reg.parent_name}</td>
-                  <td className="py-4 px-3 text-[14px]">
+                <tr key={`${reg.id}-${ci}`} className="hover:bg-[#f5f6f8] cursor-pointer" style={{ borderBottom: '0.5px solid #e5e7eb' }}>
+                  <td style={{ padding: '12px', fontSize: '15px', fontWeight: 700, color: '#111827' }}>{child.last_name}, {child.first_name}</td>
+                  <td style={{ padding: '12px', fontSize: '15px', color: '#6b7280' }}>{child.grade}</td>
+                  <td style={{ padding: '12px', fontSize: '15px', color: '#374151', whiteSpace: 'normal', wordBreak: 'break-word' }}>{child.allergy_information}</td>
+                  <td style={{ padding: '12px', fontSize: '15px', color: '#6b7280' }}>{reg.parent_name}</td>
+                  <td style={{ padding: '12px', fontSize: '15px' }}>
                     {reg.phone_number
                       ? <a href={`tel:${reg.phone_number}`} className="text-sky-600 underline underline-offset-2">{formatPhone(reg.phone_number)}</a>
                       : <span className="text-slate-300">—</span>
@@ -743,8 +743,8 @@ export default function CheckInPage() {
           </table>
         )}
 
-        {/* ── Regular check-in / goodie-bag table ───────────────────────── */}
-        {!isAllergyTab && (
+        {/* ── All-tab table: multi-date columns ─────────────────────────── */}
+        {!isAllergyTab && showMultiColumns && (
           <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '65px' }} />
@@ -753,15 +753,14 @@ export default function CheckInPage() {
               <col style={{ width: '46px' }} />
               <col style={{ width: '106px' }} />
               <col style={{ width: '106px' }} />
-              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '58px' }} />)}
+              {goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '58px' }} />)}
               {hasGapCol && <col style={{ width: '14px' }} />}
-              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '58px' }} />)}
-              {showActionCol && <col style={{ width: '112px' }} />}
+              {checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '58px' }} />)}
             </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
+              {(goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
-                  <tr className="bg-slate-50">
+                  <tr style={{ backgroundColor: '#f5f6f8' }}>
                     <th colSpan={staticColCount} className="py-2 px-1.5 pb-1 pt-2" />{/* static cols */}
                     {goodieBagDates.length > 0 && (
                       <th
@@ -796,12 +795,12 @@ export default function CheckInPage() {
                       </th>
                     )}
                   </tr>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
+                  <tr style={{ backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
+                    {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
-                        className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                        style={{ padding: '10px 6px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, cursor: sortable ? 'pointer' : 'default', userSelect: sortable ? 'none' : undefined, overflow: 'hidden', whiteSpace: 'nowrap' }}
                       >
                         <span className="inline-flex items-center whitespace-nowrap">
                           {label}{sortable && <SortIcon col={key} />}
@@ -809,32 +808,31 @@ export default function CheckInPage() {
                       </th>
                     ))}
                     {goodieBagDates.map((date) => (
-                      <th key={`gb-${date}`} className="truncate py-2 px-1.5 text-center text-xs font-semibold uppercase tracking-wider text-amber-500">
+                      <th key={`gb-${date}`} style={{ padding: '10px 6px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#d97706', fontWeight: 600, textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                         {formatDateCol(date)}
                       </th>
                     ))}
                     {hasGapCol && <th className="p-0" />}
                     {checkinDates.map((date) => (
-                      <th key={`ci-${date}`} className="truncate py-2 px-1.5 text-center text-xs font-semibold uppercase tracking-wider text-teal-500">
+                      <th key={`ci-${date}`} style={{ padding: '10px 6px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#0d9488', fontWeight: 600, textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                         {formatDateCol(date)}
                       </th>
                     ))}
                   </tr>
                 </>
               ) : (
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
+                <tr style={{ backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
+                  {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable }) => (
                     <th
                       key={key}
                       onClick={sortable ? () => handleSort(key) : undefined}
-                      className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                      style={{ padding: '10px 6px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, cursor: sortable ? 'pointer' : 'default', userSelect: sortable ? 'none' : undefined, overflow: 'hidden', whiteSpace: 'nowrap' }}
                     >
                       <span className="inline-flex items-center whitespace-nowrap">
                         {label}{sortable && <SortIcon col={key} />}
                       </span>
                     </th>
                   ))}
-                  {showActionCol && <th className="py-2 px-1.5" />}{/* action */}
                 </tr>
               )}
             </thead>
@@ -850,94 +848,181 @@ export default function CheckInPage() {
                 const isCheckedIn       = !!child.check_in?.checked_in;
                 const isPickedUp        = viewMode === 'goodiebag' && hasAnyPickup(child);
                 const loadKey           = `${reg.id}-${childIndex}`;
+                const pickupAltChildren = viewMode === 'goodiebag' ? getPickupAlternateChildren(child) : [];
+                const isGoodieAlternate = pickupAltChildren.length > 0;
+                const proxyChildren     = (child.check_in?.proxy_children ?? []).filter(Boolean);
+                const isProxyPickup     = isCheckedIn && proxyChildren.length > 0;
+                return (
+                  <Fragment key={loadKey}>
+                    <tr
+                      className="hover:bg-[#f5f6f8] cursor-pointer transition"
+                      style={{ borderBottom: '0.5px solid #e5e7eb' }}
+                    >
+                      <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.grade}</td>
+                      <td style={{ padding: '10px 6px', fontSize: '15px', fontWeight: 700, color: '#111827', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.last_name}, {child.first_name}</td>
+                      <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{reg.parent_name}</td>
+                      <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
+                      </td>
+                      {goodieBagDates.map((date) => {
+                        const s = child.sessions?.[`${date}_goodiebag`];
+                        const isAlt = s?.pickup_type === 'alternate';
+                        return (
+                          <td key={`gb-${date}`} className="py-1 px-1.5 text-center">
+                            {s ? (
+                              <span className="inline-flex flex-col items-center gap-0.5">
+                                <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
+                                  <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </span>
+                                {isAlt && <span className="text-[9px] font-medium text-amber-600">Alt</span>}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      {hasGapCol && <td className="p-0" />}
+                      {checkinDates.map((date) => {
+                        const s = getChildSessions(child)[`${date}_checkin`];
+                        return (
+                          <td key={`ci-${date}`} className="py-1 px-1.5 text-center">
+                            {s ? (
+                              <span className="inline-flex items-center justify-center rounded-full bg-teal-100 p-1">
+                                <svg className="h-3 w-3 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    {viewMode === 'goodiebag' && isGoodieAlternate && (
+                      <tr style={{ borderBottom: '0.5px solid #e5e7eb' }}>
+                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
+                          <div style={{ backgroundColor: '#E6F1FB', borderLeft: '2px solid #378ADD', borderRadius: '0 0 8px 8px', padding: '8px 14px' }}>
+                            <div className="mb-2 flex items-center gap-1.5">
+                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
+                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                              </svg>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {pickupAltChildren.map((pc, i) => {
+                                const parts = pc.name.trim().split(/\s+/);
+                                const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                                return (
+                                  <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
+                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
+                                      {initials}
+                                    </div>
+                                    <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
+                                    <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {viewMode === 'checkin' && isProxyPickup && (
+                      <tr style={{ borderBottom: '0.5px solid #e5e7eb' }}>
+                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
+                          <div style={{ backgroundColor: '#e8f4ff', borderLeft: '2px solid #378ADD', borderRadius: '0 8px 8px 0', padding: '8px 14px' }}>
+                            <div className="mb-2 flex items-center gap-1.5">
+                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
+                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                              </svg>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {proxyChildren.map((pc, i) => {
+                                const parts = pc.name.trim().split(/\s+/);
+                                const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                                return (
+                                  <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
+                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
+                                      {initials}
+                                    </div>
+                                    <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
+                                    <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+
+        {/* ── Single-column tabs: CSS Grid ────────────────────────────────── */}
+        {!isAllergyTab && !showMultiColumns && (() => {
+          const G = '110px 1.6fr 1.1fr 80px 1.3fr 1.1fr 148px';
+          const hCell: CSSProperties = { padding: '10px 12px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', overflow: 'hidden' };
+          const dCell: CSSProperties = { padding: '10px 12px', fontSize: '15px', color: '#6b7280', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' };
+          return (
+            <div style={{ width: '100%' }}>
+              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'grid', gridTemplateColumns: G, backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
+                <div style={hCell} onClick={() => handleSort('grade')}>GRADE <SortIcon col="grade" /></div>
+                <div style={hCell} onClick={() => handleSort('last_name')}>STUDENT NAME <SortIcon col="last_name" /></div>
+                <div style={hCell} onClick={() => handleSort('dob')}>DOB <SortIcon col="dob" /></div>
+                <div style={{ ...hCell, cursor: 'default', userSelect: undefined }}>GENDER</div>
+                <div style={hCell} onClick={() => handleSort('parent')}>PARENT <SortIcon col="parent" /></div>
+                <div style={{ ...hCell, cursor: 'default', userSelect: undefined }}>MOBILE</div>
+                <div style={{ ...hCell, cursor: 'default', userSelect: undefined }} />
+              </div>
+              {filteredRows.length === 0 && (
+                <div className="px-4 py-12 text-center text-sm text-slate-400">
+                  {searchQuery ? 'No children match your search.' : 'No children found.'}
+                </div>
+              )}
+              {filteredRows.map(({ reg, child, childIndex }) => {
+                const isCheckedIn       = !!child.check_in?.checked_in;
+                const isPickedUp        = viewMode === 'goodiebag' && hasAnyPickup(child);
+                const loadKey           = `${reg.id}-${childIndex}`;
                 const isLoading         = loadingCheckin === loadKey;
                 const proxyChildren     = (child.check_in?.proxy_children ?? []).filter(Boolean);
                 const isProxyPickup     = isCheckedIn && proxyChildren.length > 0;
                 const pickupAltChildren = viewMode === 'goodiebag' ? getPickupAlternateChildren(child) : [];
                 const isGoodieAlternate = pickupAltChildren.length > 0;
                 const rowActive         = viewMode === 'goodiebag' ? isPickedUp : isCheckedIn;
-
+                const rowBg: string | undefined = viewMode === 'checkin' && isProxyPickup
+                  ? '#f0faf6'
+                  : rowActive && viewMode === 'checkin'
+                  ? 'rgba(236, 253, 245, 0.5)'
+                  : undefined;
                 return (
                   <Fragment key={loadKey}>
-                    <tr
-                      className={`transition ${
-                        !showMultiColumns && viewMode === 'checkin' && isProxyPickup
-                          ? ''
-                          : `border-b border-slate-100 ${!showMultiColumns && rowActive ? '' : 'cursor-pointer hover:bg-slate-50'}`
-                      }`}
-                      style={
-                        !showMultiColumns && viewMode === 'checkin' && isProxyPickup
-                          ? { backgroundColor: '#f0faf6' }
-                          : !showMultiColumns && rowActive
-                          ? { backgroundColor: viewMode === 'goodiebag' ? undefined : 'rgba(236, 253, 245, 0.5)' }
-                          : undefined
-                      }
+                    <div
+                      className={!rowActive && !isProxyPickup ? 'hover:bg-[#f5f6f8]' : ''}
+                      style={{ display: 'grid', gridTemplateColumns: G, borderBottom: '0.5px solid #e5e7eb', backgroundColor: rowBg, cursor: 'pointer', transition: 'background-color 0.15s ease' }}
                     >
-                      {/* Grade */}
-                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">{child.grade}</td>
-                      {/* Student Name */}
-                      <td className="truncate py-1 px-1.5 text-sm font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
-                      {/* DOB */}
-                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
-                        {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
-                      </td>
-                      {/* Gender */}
-                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
-                        {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
-                      </td>
-                      {/* Parent */}
-                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">{reg.parent_name}</td>
-                      {/* Mobile */}
-                      <td className="truncate py-1 px-1.5 text-sm text-slate-500">
-                        {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
-                      </td>
-                      {/* Multi-column history (All tab) */}
-                      {showMultiColumns && (
-                        <>
-                          {goodieBagDates.map((date) => {
-                            const s = child.sessions?.[`${date}_goodiebag`];
-                            const isAlt = s?.pickup_type === 'alternate';
-                            return (
-                              <td key={`gb-${date}`} className="py-1 px-1.5 text-center">
-                                {s ? (
-                                  <span className="inline-flex flex-col items-center gap-0.5">
-                                    <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
-                                      <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </span>
-                                    {isAlt && <span className="text-[9px] font-medium text-amber-600">Alt</span>}
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-300">—</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          {hasGapCol && <td className="p-0" />}
-                          {checkinDates.map((date) => {
-                            const s = getChildSessions(child)[`${date}_checkin`];
-                            return (
-                              <td key={`ci-${date}`} className="py-1 px-1.5 text-center">
-                                {s ? (
-                                  <span className="inline-flex items-center justify-center rounded-full bg-teal-100 p-1">
-                                    <svg className="h-3 w-3 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-300">—</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </>
-                      )}
-                      {/* Action column — non-All, non-Allergies tabs only */}
-                      {showActionCol && (
-                      <td className="py-1 px-1.5">
-                        <div className="flex items-center justify-end">
-                        {(viewMode === 'goodiebag' ? (
+                      <div style={dCell}>{child.grade}</div>
+                      <div style={{ ...dCell, fontWeight: 700, color: '#111827' }}>{child.last_name}, {child.first_name}</div>
+                      <div style={dCell}>{child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}</div>
+                      <div style={dCell}>{child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}</div>
+                      <div style={dCell}>{reg.parent_name}</div>
+                      <div style={dCell}>{reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}</div>
+                      <div style={{ ...dCell, justifyContent: 'flex-end', padding: '6px 12px' }}>
+                        {viewMode === 'goodiebag' ? (
                           isPickedUp ? (
                             isGoodieAlternate ? (
                               <button
@@ -1016,79 +1101,69 @@ export default function CheckInPage() {
                               </>
                             ) : 'Check in'}
                           </button>
-                        ))}
-                        </div>
-                      </td>
-                      )}
-                    </tr>
-
-                    {/* Alternate pickup panel — goodie bag mode */}
+                        )}
+                      </div>
+                    </div>
                     {viewMode === 'goodiebag' && isGoodieAlternate && (
-                      <tr className="border-b border-slate-100">
-                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
-                          <div style={{ backgroundColor: '#E6F1FB', borderLeft: '2px solid #378ADD', borderRadius: '0 0 8px 8px', padding: '8px 14px' }}>
-                            <div className="mb-2 flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
-                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
-                              </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {pickupAltChildren.map((pc, i) => {
-                                const parts = pc.name.trim().split(/\s+/);
-                                const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
-                                return (
-                                  <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
-                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
-                                      {initials}
-                                    </div>
-                                    <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
-                                    <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                      <div style={{ borderBottom: '0.5px solid #e5e7eb', padding: '0 20px 12px 20px' }}>
+                        <div style={{ backgroundColor: '#E6F1FB', borderLeft: '2px solid #378ADD', borderRadius: '0 0 8px 8px', padding: '8px 14px' }}>
+                          <div className="mb-2 flex items-center gap-1.5">
+                            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
+                              <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                            </svg>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
                           </div>
-                        </td>
-                      </tr>
+                          <div className="flex flex-wrap gap-2">
+                            {pickupAltChildren.map((pc, i) => {
+                              const parts = pc.name.trim().split(/\s+/);
+                              const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                              return (
+                                <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
+                                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
+                                    {initials}
+                                  </div>
+                                  <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
+                                  <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     )}
-
-                    {/* Proxy pickup side panel — check-in mode only */}
                     {viewMode === 'checkin' && isProxyPickup && (
-                      <tr className="border-b border-slate-100" style={showMultiColumns ? undefined : { backgroundColor: '#f0faf6' }}>
-                        <td colSpan={totalCols} style={{ padding: '0 20px 12px 20px' }}>
-                          <div style={{ backgroundColor: '#e8f4ff', borderLeft: '2px solid #378ADD', borderRadius: '0 8px 8px 0', padding: '8px 14px' }}>
-                            <div className="mb-2 flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
-                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
-                              </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {proxyChildren.map((pc, i) => {
-                                const parts = pc.name.trim().split(/\s+/);
-                                const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
-                                return (
-                                  <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
-                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
-                                      {initials}
-                                    </div>
-                                    <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
-                                    <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                      <div style={{ borderBottom: '0.5px solid #e5e7eb', backgroundColor: '#f0faf6', padding: '0 20px 12px 20px' }}>
+                        <div style={{ backgroundColor: '#e8f4ff', borderLeft: '2px solid #378ADD', borderRadius: '0 8px 8px 0', padding: '8px 14px' }}>
+                          <div className="mb-2 flex items-center gap-1.5">
+                            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
+                              <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
+                            </svg>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
                           </div>
-                        </td>
-                      </tr>
+                          <div className="flex flex-wrap gap-2">
+                            {proxyChildren.map((pc, i) => {
+                              const parts = pc.name.trim().split(/\s+/);
+                              const initials = ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                              return (
+                                <div key={i} className="inline-flex items-center gap-1.5" style={{ backgroundColor: '#fff', border: '0.5px solid #B5D4F4', borderRadius: '999px', padding: '3px 10px 3px 4px' }}>
+                                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#B5D4F4', color: '#0C447C' }}>
+                                    {initials}
+                                  </div>
+                                  <span className="text-xs font-medium" style={{ color: '#185FA5' }}>{pc.name}</span>
+                                  <span className="text-xs" style={{ color: '#378ADD' }}>· {pc.grade}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </Fragment>
                 );
               })}
-            </tbody>
-          </table>
-        )}
+            </div>
+          );
+        })()}
 
         </div>
       </div>
