@@ -535,7 +535,7 @@ export default function CheckInPage() {
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] px-6 py-8 space-y-8">
+    <div className="page-container py-8 space-y-8">
 
       {/* Page header */}
       <div className="space-y-1">

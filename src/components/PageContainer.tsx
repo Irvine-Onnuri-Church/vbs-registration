@@ -7,7 +7,7 @@ type PageContainerProps = {
 
 export default function PageContainer({ children, className = '' }: PageContainerProps) {
   return (
-    <div className={`mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 ${className}`.trim()}>
+    <div className={`page-container py-10 ${className}`.trim()}>
       {children}
     </div>
   );
