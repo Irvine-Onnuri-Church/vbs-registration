@@ -417,8 +417,8 @@ export default function CheckInPage() {
     { label: 'Parent',             key: 'parent',  sortable: true,  thClass: ''                          },
     { label: 'Grade',              key: 'grade',   sortable: true,  thClass: ''                          },
     { label: 'Class',              key: 'class',   sortable: true,  thClass: ''                          },
-    { label: 'T-Shirt',            key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap w-28'    },
-    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: 'w-36 max-w-[144px]'        },
+    { label: 'T-Shirt Size',        key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap'         },
+    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: 'w-28 max-w-[112px]'        },
   ];
 
   function SortIcon({ col }: { col: string }) {
@@ -663,7 +663,7 @@ export default function CheckInPage() {
                         onClick={sortable ? () => handleSort(key) : undefined}
                         className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                       >
-                        <span className="inline-flex items-center">
+                        <span className="inline-flex items-center whitespace-nowrap">
                           {label}{sortable && <SortIcon col={key} />}
                         </span>
                       </th>
