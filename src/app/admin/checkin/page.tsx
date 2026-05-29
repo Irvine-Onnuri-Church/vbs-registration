@@ -280,7 +280,7 @@ export default function CheckInPage() {
 
   const showMultiColumns = filterMode === 'all';
 
-  const FIXED_GOODIEBAG_DATES = ['2026-05-17'];
+  const FIXED_GOODIEBAG_DATES = ['2026-05-17', '2026-05-31'];
 
   const goodieBagDates = showMultiColumns ? [...new Set([
     ...FIXED_GOODIEBAG_DATES,
@@ -558,31 +558,35 @@ export default function CheckInPage() {
                     {goodieBagDates.length > 0 && (
                       <th
                         colSpan={goodieBagDates.length}
-                        className="border-b border-amber-200 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
+                        className="px-4 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
                       >
-                        <span className="inline-flex items-center gap-1.5">
-                          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 12v10H4V12" />
-                            <path d="M22 7H2v5h20V7z" />
-                            <path d="M12 22V7" />
-                            <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
-                            <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
-                          </svg>
-                          Goodie Bag
-                        </span>
+                        <div className="flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 border-b border-amber-200 pb-1">
+                            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 12v10H4V12" />
+                              <path d="M22 7H2v5h20V7z" />
+                              <path d="M12 22V7" />
+                              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
+                              <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+                            </svg>
+                            Goodie Bag
+                          </span>
+                        </div>
                       </th>
                     )}
                     {checkinDates.length > 0 && (
                       <th
                         colSpan={checkinDates.length}
-                        className="border-b border-teal-200 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-teal-600"
+                        className="px-4 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-teal-600"
                       >
-                        <span className="inline-flex items-center gap-1.5">
-                          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                          </svg>
-                          <span className="whitespace-nowrap">VBS Check-in</span>
-                        </span>
+                        <div className="flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 border-b border-teal-200 pb-1">
+                            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            <span className="whitespace-nowrap">VBS Check-in</span>
+                          </span>
+                        </div>
                       </th>
                     )}
                     <th className="px-4 pb-1 pt-3" />
@@ -675,14 +679,8 @@ export default function CheckInPage() {
                       {/* T-Shirt */}
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{child.tshirt_size}</td>
                       {/* Allergies */}
-                      <td className="px-4 py-3">
-                        {hasAllergy ? (
-                          <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                            {child.allergy_information}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
+                      <td className="px-4 py-3 text-slate-600">
+                        {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Multi-column history (All tab) */}
                       {showMultiColumns && (
@@ -692,8 +690,10 @@ export default function CheckInPage() {
                             return (
                               <td key={`gb-${date}`} className="px-4 py-3 text-center">
                                 {s ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                                    Picked up
+                                  <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
+                                    <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
                                   </span>
                                 ) : (
                                   <span className="text-slate-300">—</span>
@@ -706,7 +706,7 @@ export default function CheckInPage() {
                             return (
                               <td key={`ci-${date}`} className="px-4 py-3 text-center">
                                 {s ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
+                                  <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
                                     Checked in
                                   </span>
                                 ) : (
@@ -962,8 +962,12 @@ export default function CheckInPage() {
                 {/* Step 1 — who is checking in */}
                 {modalStep === 1 && (
                   <>
-                    <h2 className="mb-1 text-lg font-bold text-white">Who is checking in?</h2>
-                    <p className="mb-5 text-sm text-slate-400">Please select who is picking up the child.</p>
+                    <h2 className="mb-1 text-lg font-bold text-white">
+                      {modalMode === 'goodiebag' ? 'Who is picking up the goodie bag?' : 'Who is checking in?'}
+                    </h2>
+                    <p className="mb-5 text-sm text-slate-400">
+                      {modalMode === 'goodiebag' ? 'Please select who is picking up the goodie bag.' : 'Please select who is picking up the child.'}
+                    </p>
                     <div className="mb-6 grid grid-cols-2 gap-3">
                       <button
                         onClick={() => setPickupType('parent')}
@@ -1010,7 +1014,11 @@ export default function CheckInPage() {
                       <span className="text-sm font-semibold">Alternate Pickup</span>
                     </div>
                     <h2 className="mb-1 text-lg font-bold text-white">Child Information</h2>
-                    <p className="mb-4 text-sm text-slate-400">Please enter the child&apos;s name and grade.</p>
+                    <p className="mb-4 text-sm text-slate-400">
+                      {modalMode === 'goodiebag'
+                        ? 'Please enter the name and grade of the child you are picking up for.'
+                        : "Please enter the child's name and grade."}
+                    </p>
 
                     <div className="mb-1.5 flex gap-2">
                       <span className="flex-1 pl-9 text-xs text-slate-400">Name</span>
@@ -1095,46 +1103,72 @@ export default function CheckInPage() {
                   </>
                 )}
 
+                {/* Step 3 — Success (goodie bag only) */}
+                {modalStep === 3 && modalMode === 'goodiebag' && (
+                  <div
+                    className="flex flex-col items-center py-6 text-center"
+                    onClick={closeModal}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-teal-500">
+                      <svg className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h2 className="mb-2 text-2xl font-bold text-white">Goodie bag picked up!</h2>
+                    <p className="font-semibold text-slate-200">{child.first_name} {child.last_name}</p>
+                    <p className="text-sm text-slate-400">{child.grade}</p>
+                    <p className="mt-8 text-xs text-slate-600">Tap anywhere to close</p>
+                  </div>
+                )}
+
                 {/* Modal bottom buttons */}
-                <div className="flex gap-3">
-                  {modalStep === 1 ? (
-                    <>
-                      <button
-                        onClick={closeModal}
-                        className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleModalNext}
-                        disabled={!pickupType || isLoading}
-                        className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white transition disabled:opacity-40"
-                        style={{ backgroundColor: pickupType === 'parent' ? '#1D9E75' : '#1e3a6e' }}
-                      >
-                        {isLoading ? 'Saving...' : pickupType === 'parent' ? 'Complete Check-in' : 'Next →'}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => setModalStep(1)}
-                        className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
-                      >
-                        ← Back
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await toggleCheckIn(reg.id, childIndex, false, step2Rows.filter((r) => r.name.trim()), 'checkin');
-                          closeModal();
-                        }}
-                        disabled={isLoading}
-                        className="flex-1 rounded-2xl bg-[#1e3a6e] py-3 text-sm font-semibold text-white transition hover:bg-[#254a8a] disabled:opacity-40"
-                      >
-                        {isLoading ? 'Saving...' : 'Complete Check-in'}
-                      </button>
-                    </>
-                  )}
-                </div>
+                {modalStep !== 3 && (
+                  <div className="flex gap-3">
+                    {modalStep === 1 ? (
+                      <>
+                        <button
+                          onClick={closeModal}
+                          className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleModalNext}
+                          disabled={!pickupType || isLoading}
+                          className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white transition disabled:opacity-40"
+                          style={{ backgroundColor: pickupType === 'parent' ? '#1D9E75' : '#1e3a6e' }}
+                        >
+                          {isLoading ? 'Saving...' : pickupType === 'parent' ? (modalMode === 'goodiebag' ? 'Complete Pickup' : 'Complete Check-in') : 'Next →'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setModalStep(1)}
+                          className="flex-1 rounded-2xl border-2 border-slate-600 py-3 text-sm font-semibold text-white transition hover:border-slate-400"
+                        >
+                          ← Back
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (modalMode === 'goodiebag') {
+                              await toggleCheckIn(reg.id, childIndex, false, step2Rows.filter((r) => r.name.trim()), 'goodiebag', 'alternate');
+                              setModalStep(3);
+                            } else {
+                              await toggleCheckIn(reg.id, childIndex, false, step2Rows.filter((r) => r.name.trim()), 'checkin');
+                              closeModal();
+                            }
+                          }}
+                          disabled={isLoading}
+                          className="flex-1 rounded-2xl bg-[#1e3a6e] py-3 text-sm font-semibold text-white transition hover:bg-[#254a8a] disabled:opacity-40"
+                        >
+                          {isLoading ? 'Saving...' : modalMode === 'goodiebag' ? 'Complete Pickup' : 'Complete Check-in'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </>
