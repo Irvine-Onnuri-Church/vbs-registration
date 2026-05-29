@@ -89,18 +89,14 @@ function lastName(fullName: string): string {
 
 function getSortValue(row: FlatRow, col: string): string | number {
   switch (col) {
-    case 'child':   return lastName(`${row.child.first_name} ${row.child.last_name}`);
-    case 'parent':  return lastName(row.reg.parent_name);
-    case 'grade':   return GRADE_ORDER[row.child.grade] ?? 99;
-    case 'class':   return row.child.class ?? '￿';
-    case 'tshirt':  return TSHIRT_ORDER[row.child.tshirt_size] ?? 99;
-    case 'dob':     return row.child.date_of_birth ?? '9999-99-99';
-    case 'gender':  return (row.child.gender ?? '').toLowerCase();
-    case 'allergy': {
-      const v = row.child.allergy_information ?? '';
-      return !!v && !/^(none|no|nope|na|n\/a|-)$/i.test(v.trim()) ? v.toLowerCase() : '￿';
-    }
-    default:        return '';
+    case 'last_name':  return row.child.last_name.toLowerCase();
+    case 'first_name': return row.child.first_name.toLowerCase();
+    case 'parent':     return lastName(row.reg.parent_name);
+    case 'grade':      return GRADE_ORDER[row.child.grade] ?? 99;
+    case 'tshirt':     return TSHIRT_ORDER[row.child.tshirt_size] ?? 99;
+    case 'dob':        return row.child.date_of_birth ?? '9999-99-99';
+    case 'gender':     return (row.child.gender ?? '').toLowerCase();
+    default:           return '';
   }
 }
 
@@ -396,11 +392,11 @@ export default function CheckInPage() {
   ])].sort() : [];
 
   const hasGapCol = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
-  const showAllergyCol = filterMode === 'has_allergies';
-  const staticColCount = showAllergyCol ? 9 : 8; // data cols excl. spacer/action
+  // 9 static cols: grade, last name, first name, tshirt, dob, gender, parent, mobile, notes
+  const staticColCount = 9;
   const totalCols = showMultiColumns
-    ? staticColCount + 2 + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
-    : staticColCount + 1;
+    ? staticColCount + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
+    : staticColCount + 1; // +1 for action column
 
   function hasAnyPickup(child: Child): boolean {
     return Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up');
@@ -469,15 +465,15 @@ export default function CheckInPage() {
   ];
 
   const SORTABLE_COLS = [
-    { label: 'Child',              key: 'child',   sortable: true,  thClass: ''                          },
-    { label: 'Parent',             key: 'parent',  sortable: true,  thClass: ''                          },
-    { label: 'Grade',              key: 'grade',   sortable: true,  thClass: ''                          },
-    { label: 'Class',              key: 'class',   sortable: true,  thClass: ''                          },
-    { label: 'T-Shirt Size',       key: 'tshirt',  sortable: true,  thClass: 'whitespace-nowrap'         },
-    { label: 'DOB',                key: 'dob',     sortable: true,  thClass: 'whitespace-nowrap'         },
-    { label: 'Gender',             key: 'gender',  sortable: true,  thClass: 'whitespace-nowrap'         },
-    { label: 'Mobile',             key: 'mobile',  sortable: false, thClass: 'whitespace-nowrap'         },
-    { label: 'Allergies/ Medical', key: 'allergy', sortable: false, thClass: ''                          },
+    { label: 'Grade',      key: 'grade',      sortable: true,  thClass: '' },
+    { label: 'Last Name',  key: 'last_name',  sortable: true,  thClass: '' },
+    { label: 'First Name', key: 'first_name', sortable: true,  thClass: '' },
+    { label: 'T-Shirt',    key: 'tshirt',     sortable: true,  thClass: '' },
+    { label: 'DOB',        key: 'dob',        sortable: true,  thClass: '' },
+    { label: 'Gender',     key: 'gender',     sortable: true,  thClass: '' },
+    { label: 'Parent',     key: 'parent',     sortable: true,  thClass: '' },
+    { label: 'Mobile',     key: 'mobile',     sortable: false, thClass: '' },
+    { label: 'Notes',      key: 'notes',      sortable: false, thClass: '' },
   ];
 
   function SortIcon({ col }: { col: string }) {
@@ -614,8 +610,8 @@ export default function CheckInPage() {
                 className="flex items-center justify-center"
                 style={{
                   width: 48, height: 48, borderRadius: '50%',
-                  backgroundColor: viewMode === 'checkin' ? '#0f1e5e' : '#f1f5f9',
-                  boxShadow: viewMode === 'checkin' ? '0 0 0 2.5px #378ADD' : 'none',
+                  backgroundColor: viewMode === 'checkin' ? '#F97316' : '#f1f5f9',
+                  boxShadow: viewMode === 'checkin' ? '0 0 0 2.5px rgba(249,115,22,0.4)' : 'none',
                   color: viewMode === 'checkin' ? '#ffffff' : '#94a3b8',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
@@ -631,8 +627,8 @@ export default function CheckInPage() {
                 className="flex items-center justify-center"
                 style={{
                   width: 48, height: 48, borderRadius: '50%',
-                  backgroundColor: viewMode === 'goodiebag' ? '#0f1e5e' : '#f1f5f9',
-                  boxShadow: viewMode === 'goodiebag' ? '0 0 0 2.5px #378ADD' : 'none',
+                  backgroundColor: viewMode === 'goodiebag' ? '#F97316' : '#f1f5f9',
+                  boxShadow: viewMode === 'goodiebag' ? '0 0 0 2.5px rgba(249,115,22,0.4)' : 'none',
                   color: viewMode === 'goodiebag' ? '#ffffff' : '#94a3b8',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
@@ -682,41 +678,37 @@ export default function CheckInPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-base" style={{ tableLayout: 'fixed' }}>
+          <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: '160px' }} />
-              <col style={{ width: '180px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '100px' }} />
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '70px' }} />
+              <col style={{ width: '90px' }} />
+              <col style={{ width: '90px' }} />
               <col style={{ width: '60px' }} />
-              <col style={{ width: '120px' }} />
-              {showAllergyCol && <col style={{ width: '200px' }} />}
-              {showMultiColumns && <col />}{/* Auto spacer — fills remaining */}
-              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '80px' }} />)}
-              {hasGapCol && <col style={{ width: '32px' }} />}
-              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '80px' }} />)}
-              <col style={{ width: '120px' }} />
+              <col style={{ width: '90px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '90px' }} />
+              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '60px' }} />)}
+              {hasGapCol && <col style={{ width: '16px' }} />}
+              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '60px' }} />)}
+              {!showMultiColumns && <col style={{ width: '120px' }} />}
             </colgroup>
             <thead>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
                   <tr className="bg-slate-50/60">
-                    <th colSpan={staticColCount + 1} className="px-4 pb-1 pt-3" />{/* static cols + spacer */}
+                    <th colSpan={staticColCount} className="py-2 px-1.5 pb-1 pt-2" />{/* static cols */}
                     {goodieBagDates.length > 0 && (
                       <th
                         colSpan={goodieBagDates.length}
-                        className="px-4 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
+                        className="py-2 px-1.5 pb-1 pt-2 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
                       >
                         <div className="flex justify-center">
-                          <span className="inline-flex items-center gap-1.5 border-b border-amber-200 pb-1">
-                            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M20 12v10H4V12" />
-                              <path d="M22 7H2v5h20V7z" />
-                              <path d="M12 22V7" />
-                              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
-                              <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+                          <span className="inline-flex items-center gap-1 border-b border-amber-200 pb-0.5">
+                            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 12v10H4V12" /><path d="M22 7H2v5h20V7z" /><path d="M12 22V7" />
+                              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
                             </svg>
                             Goodie Bag
                           </span>
@@ -727,11 +719,11 @@ export default function CheckInPage() {
                     {checkinDates.length > 0 && (
                       <th
                         colSpan={checkinDates.length}
-                        className="px-4 pb-1 pt-3 text-center text-xs font-bold uppercase tracking-wider text-teal-600"
+                        className="py-2 px-1.5 pb-1 pt-2 text-center text-xs font-bold uppercase tracking-wider text-teal-600"
                       >
                         <div className="flex justify-center">
-                          <span className="inline-flex items-center gap-1.5 border-b border-teal-200 pb-1">
-                            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <span className="inline-flex items-center gap-1 border-b border-teal-200 pb-0.5">
+                            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                             <span className="whitespace-nowrap">VBS Check-in</span>
@@ -739,33 +731,30 @@ export default function CheckInPage() {
                         </div>
                       </th>
                     )}
-                    <th className="px-4 pb-1 pt-3" />
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {SORTABLE_COLS.filter((c) => showAllergyCol || c.key !== 'allergy').map(({ label, key, sortable, thClass }) => (
+                    {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
-                        className={`overflow-hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                        className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                       >
                         <span className="inline-flex items-center whitespace-nowrap">
                           {label}{sortable && <SortIcon col={key} />}
                         </span>
                       </th>
                     ))}
-                    <th className="px-4 py-3" />{/* spacer */}
                     {goodieBagDates.map((date) => (
-                      <th key={`gb-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-amber-500">
+                      <th key={`gb-${date}`} className="truncate py-2 px-1.5 text-center text-xs font-semibold uppercase tracking-wider text-amber-500">
                         {formatDateCol(date)}
                       </th>
                     ))}
                     {hasGapCol && <th className="p-0" />}
                     {checkinDates.map((date) => (
-                      <th key={`ci-${date}`} className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-teal-500">
+                      <th key={`ci-${date}`} className="truncate py-2 px-1.5 text-center text-xs font-semibold uppercase tracking-wider text-teal-500">
                         {formatDateCol(date)}
                       </th>
                     ))}
-                    <th className="px-4 py-3" />
                   </tr>
                 </>
               ) : (
@@ -774,14 +763,14 @@ export default function CheckInPage() {
                     <th
                       key={key}
                       onClick={sortable ? () => handleSort(key) : undefined}
-                      className={`overflow-hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
+                      className={`truncate py-2 px-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''} ${thClass}`}
                     >
                       <span className="inline-flex items-center whitespace-nowrap">
                         {label}{sortable && <SortIcon col={key} />}
                       </span>
                     </th>
                   ))}
-                  <th className="px-4 py-3" />
+                  <th className="py-2 px-1.5" />{/* action */}
                 </tr>
               )}
             </thead>
@@ -821,55 +810,40 @@ export default function CheckInPage() {
                           : undefined
                       }
                     >
-                      {/* Child */}
-                      <td className="px-4 py-3">
-                        <span className="font-semibold text-slate-900">
-                          {child.first_name} {child.last_name}
-                        </span>
-                      </td>
-                      {/* Parent */}
-                      <td className="px-4 py-3 text-slate-600">{reg.parent_name}</td>
                       {/* Grade */}
-                      <td className="px-4 py-3 text-slate-600">{child.grade}</td>
-                      {/* Class */}
-                      <td className="px-4 py-3">
-                        {child.class === 'appletree' ? (
-                          <span className="inline-flex whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                            Apple Tree
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </td>
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{child.grade}</td>
+                      {/* Last Name */}
+                      <td className="truncate py-2 px-1.5 text-xs font-semibold text-slate-900">{child.last_name}</td>
+                      {/* First Name */}
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-700">{child.first_name}</td>
                       {/* T-Shirt */}
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{child.tshirt_size}</td>
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{child.tshirt_size}</td>
                       {/* DOB */}
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
                       </td>
                       {/* Gender */}
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
                       </td>
+                      {/* Parent */}
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">{reg.parent_name}</td>
                       {/* Mobile */}
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
                       </td>
-                      {/* Allergies */}
-                      {showAllergyCol && (
-                        <td className="px-4 py-3 text-slate-600">
-                          {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
-                        </td>
-                      )}
+                      {/* Notes */}
+                      <td className="truncate py-2 px-1.5 text-xs text-slate-600">
+                        {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
+                      </td>
                       {/* Multi-column history (All tab) */}
                       {showMultiColumns && (
                         <>
-                          <td className="p-0" />{/* spacer */}
                           {goodieBagDates.map((date) => {
                             const s = child.sessions?.[`${date}_goodiebag`];
                             const isAlt = s?.pickup_type === 'alternate';
                             return (
-                              <td key={`gb-${date}`} className="px-4 py-3 text-center">
+                              <td key={`gb-${date}`} className="py-2 px-1.5 text-center">
                                 {s ? (
                                   <span className="inline-flex flex-col items-center gap-0.5">
                                     <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
@@ -889,10 +863,12 @@ export default function CheckInPage() {
                           {checkinDates.map((date) => {
                             const s = getChildSessions(child)[`${date}_checkin`];
                             return (
-                              <td key={`ci-${date}`} className="px-4 py-3 text-center">
+                              <td key={`ci-${date}`} className="py-2 px-1.5 text-center">
                                 {s ? (
-                                  <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-semibold text-teal-800">
-                                    Checked in
+                                  <span className="inline-flex items-center justify-center rounded-full bg-teal-100 p-1">
+                                    <svg className="h-3 w-3 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
                                   </span>
                                 ) : (
                                   <span className="text-slate-300">—</span>
@@ -902,10 +878,11 @@ export default function CheckInPage() {
                           })}
                         </>
                       )}
-                      {/* Action column */}
-                      <td className="px-4 py-3">
+                      {/* Action column — non-All tabs only */}
+                      {!showMultiColumns && (
+                      <td className="py-2 px-1.5">
                         <div className="flex items-center justify-end">
-                        {!showMultiColumns && (viewMode === 'goodiebag' ? (
+                        {(viewMode === 'goodiebag' ? (
                           isPickedUp ? (
                             isGoodieAlternate ? (
                               <span className="inline-flex items-center gap-1.5 whitespace-nowrap" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', borderRadius: '999px', padding: '6px 14px', fontSize: '14px', fontWeight: 600 }}>
@@ -979,6 +956,7 @@ export default function CheckInPage() {
                         ))}
                         </div>
                       </td>
+                      )}
                     </tr>
 
                     {/* Alternate pickup panel — goodie bag mode */}
