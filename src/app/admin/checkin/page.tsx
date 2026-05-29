@@ -376,16 +376,16 @@ export default function CheckInPage() {
       .filter(({ child }) => !child.canceled),
   );
 
+  const isAllergyTab   = filterMode === 'has_allergies';
   const showMultiColumns = filterMode === 'all';
 
   // Only show the two fixed goodie bag event dates — no dynamic dates
   const goodieBagDates = showMultiColumns ? GOODIEBAG_EVENT_DATES : [];
   const checkinDates   = showMultiColumns ? ['2026-06-10'] : [];
 
-  const hasGapCol = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
-  const showNotesCol   = filterMode === 'has_allergies';
-  const showActionCol  = !showMultiColumns && filterMode !== 'has_allergies';
-  const staticColCount = showNotesCol ? 8 : 7;
+  const hasGapCol      = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
+  const showActionCol  = !showMultiColumns && !isAllergyTab;
+  const staticColCount = 6; // Grade, Student Name, DOB, Gender, Parent, Mobile
   const totalCols = showMultiColumns
     ? staticColCount + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
     : staticColCount + (showActionCol ? 1 : 0);
@@ -430,7 +430,15 @@ export default function CheckInPage() {
       const cmp = typeof va === 'number' && typeof vb === 'number'
         ? va - vb
         : String(va).localeCompare(String(vb));
-      return sortDir === 'asc' ? cmp : -cmp;
+      if (cmp !== 0) return sortDir === 'asc' ? cmp : -cmp;
+      // Two-level sort: tiebreak Student Name by first name
+      if (sortCol === 'last_name') {
+        const fa = a.child.first_name.toLowerCase();
+        const fb = b.child.first_name.toLowerCase();
+        const fcmp = fa.localeCompare(fb);
+        return sortDir === 'asc' ? fcmp : -fcmp;
+      }
+      return 0;
     });
   }
   // else: preserve API order (created_at desc = most recent first)
@@ -457,14 +465,13 @@ export default function CheckInPage() {
   ];
 
   const SORTABLE_COLS = [
-    { label: 'Grade',      key: 'grade',      sortable: true,  thClass: '' },
-    { label: 'Last Name',  key: 'last_name',  sortable: true,  thClass: '' },
-    { label: 'First Name', key: 'first_name', sortable: true,  thClass: '' },
-    { label: 'DOB',        key: 'dob',        sortable: true,  thClass: '' },
-    { label: 'Gender',     key: 'gender',     sortable: true,  thClass: '' },
-    { label: 'Parent',     key: 'parent',     sortable: true,  thClass: '' },
-    { label: 'Mobile',     key: 'mobile',     sortable: false, thClass: '' },
-    { label: 'Notes',      key: 'notes',      sortable: false, thClass: '' },
+    { label: 'Grade',        key: 'grade',      sortable: true,  thClass: '' },
+    { label: 'Student Name', key: 'last_name',  sortable: true,  thClass: '' },
+    { label: 'DOB',          key: 'dob',        sortable: true,  thClass: '' },
+    { label: 'Gender',       key: 'gender',     sortable: true,  thClass: '' },
+    { label: 'Parent',       key: 'parent',     sortable: true,  thClass: '' },
+    { label: 'Mobile',       key: 'mobile',     sortable: false, thClass: '' },
+    { label: '',             key: 'notes',      sortable: false, thClass: '' },
   ];
 
   function SortIcon({ col }: { col: string }) {
@@ -593,8 +600,8 @@ export default function CheckInPage() {
               />
             </div>
 
-            {/* 48 px circular mode toggle buttons */}
-            <div className="ml-auto flex shrink-0 items-center gap-2">
+            {/* 48 px circular mode toggle buttons — hidden on Allergies/Medical tab */}
+            <div className={`ml-auto flex shrink-0 items-center gap-2 ${isAllergyTab ? 'invisible pointer-events-none' : ''}`}>
               <button
                 onClick={() => switchMode('checkin')}
                 title="VBS Check-in"
@@ -641,7 +648,10 @@ export default function CheckInPage() {
             {filterButtons.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setFilterMode(key)}
+                onClick={() => {
+                  setFilterMode(key);
+                  if (key === 'has_allergies') { setSortCol('last_name'); setSortDir('asc'); }
+                }}
                 className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                   filterMode === key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
@@ -669,16 +679,74 @@ export default function CheckInPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
+
+        {/* ── Allergies/Medical emergency-reference table ───────────────── */}
+        {isAllergyTab && (
+          <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '190px' }} />
+              <col style={{ width: '110px' }} />
+              <col />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '148px' }} />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/60">
+                {([
+                  { label: 'Student Name', key: 'last_name',  sortable: true  },
+                  { label: 'Grade',        key: 'grade',      sortable: true  },
+                  { label: 'Allergies / Medical', key: '',    sortable: false },
+                  { label: 'Parent',       key: 'parent',     sortable: true  },
+                  { label: 'Mobile',       key: 'mobile',     sortable: false },
+                ] as { label: string; key: string; sortable: boolean }[]).map(({ label, key, sortable }) => (
+                  <th
+                    key={label}
+                    onClick={sortable ? () => handleSort(key) : undefined}
+                    className={`truncate py-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${sortable ? 'cursor-pointer select-none hover:text-slate-600' : ''}`}
+                  >
+                    <span className="inline-flex items-center whitespace-nowrap">
+                      {label}{sortable && <SortIcon col={key} />}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">
+                    {searchQuery ? 'No children match your search.' : 'No children with allergies or medical notes found.'}
+                  </td>
+                </tr>
+              )}
+              {filteredRows.map(({ reg, child, childIndex: ci }) => (
+                <tr key={`${reg.id}-${ci}`} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-4 px-3 text-[14px] font-bold text-slate-900">{child.last_name}, {child.first_name}</td>
+                  <td className="py-4 px-3 text-[14px] text-slate-600">{child.grade}</td>
+                  <td className="py-4 px-3 text-[14px] text-slate-800 whitespace-normal break-words">{child.allergy_information}</td>
+                  <td className="py-4 px-3 text-[14px] text-slate-600">{reg.parent_name}</td>
+                  <td className="py-4 px-3 text-[14px]">
+                    {reg.phone_number
+                      ? <a href={`tel:${reg.phone_number}`} className="text-sky-600 underline underline-offset-2">{formatPhone(reg.phone_number)}</a>
+                      : <span className="text-slate-300">—</span>
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* ── Regular check-in / goodie-bag table ───────────────────────── */}
+        {!isAllergyTab && (
           <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '70px' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '90px' }} />
+              <col style={{ width: '160px' }} />
               <col style={{ width: '90px' }} />
               <col style={{ width: '50px' }} />
               <col style={{ width: '110px' }} />
               <col style={{ width: '110px' }} />
-              {showNotesCol && <col style={{ width: '90px' }} />}
               {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '60px' }} />)}
               {hasGapCol && <col style={{ width: '16px' }} />}
               {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '60px' }} />)}
@@ -723,7 +791,7 @@ export default function CheckInPage() {
                     )}
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50/60">
-                    {SORTABLE_COLS.filter(c => showNotesCol || c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
+                    {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
                       <th
                         key={key}
                         onClick={sortable ? () => handleSort(key) : undefined}
@@ -749,7 +817,7 @@ export default function CheckInPage() {
                 </>
               ) : (
                 <tr className="border-b border-slate-200 bg-slate-50/60">
-                  {SORTABLE_COLS.map(({ label, key, sortable, thClass }) => (
+                  {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable, thClass }) => (
                     <th
                       key={key}
                       onClick={sortable ? () => handleSort(key) : undefined}
@@ -802,10 +870,8 @@ export default function CheckInPage() {
                     >
                       {/* Grade */}
                       <td className="truncate py-2 px-1.5 text-xs text-slate-600">{child.grade}</td>
-                      {/* Last Name */}
-                      <td className="truncate py-2 px-1.5 text-xs font-semibold text-slate-900">{child.last_name}</td>
-                      {/* First Name */}
-                      <td className="truncate py-2 px-1.5 text-xs text-slate-700">{child.first_name}</td>
+                      {/* Student Name */}
+                      <td className="truncate py-2 px-1.5 text-xs font-semibold text-slate-900">{child.last_name}, {child.first_name}</td>
                       {/* DOB */}
                       <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
@@ -820,12 +886,6 @@ export default function CheckInPage() {
                       <td className="truncate py-2 px-1.5 text-xs text-slate-600">
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
                       </td>
-                      {/* Notes — only in Allergies/Medical tab */}
-                      {showNotesCol && (
-                        <td className="truncate py-2 px-1.5 text-xs text-slate-600">
-                          {hasAllergy ? child.allergy_information : <span className="text-slate-300">—</span>}
-                        </td>
-                      )}
                       {/* Multi-column history (All tab) */}
                       {showMultiColumns && (
                         <>
@@ -1015,6 +1075,8 @@ export default function CheckInPage() {
               })}
             </tbody>
           </table>
+        )}
+
         </div>
       </div>
 
