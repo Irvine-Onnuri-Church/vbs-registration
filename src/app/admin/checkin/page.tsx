@@ -172,6 +172,7 @@ export default function CheckInPage() {
 
   // Confirm popup
   const [confirmData, setConfirmData]         = useState<ConfirmData | null>(null);
+  const [editPickupData, setEditPickupData]   = useState<{ reg: Registration; childIndex: number } | null>(null);
 
   // Check-in modal
   const [modalData, setModalData]             = useState<{ reg: Registration; childIndex: number } | null>(null);
@@ -534,7 +535,7 @@ export default function CheckInPage() {
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] px-4 py-10 sm:px-6 lg:px-8 space-y-8">
+    <div className="mx-auto w-full max-w-[1800px] px-6 py-8 space-y-8">
 
       {/* Page header */}
       <div className="space-y-1">
@@ -583,7 +584,7 @@ export default function CheckInPage() {
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
 
         {/* Search + filter bar */}
-        <div className="border-b border-slate-200 px-4 py-4 space-y-3">
+        <div className="border-b border-slate-200 px-6 py-4 space-y-3">
 
           {/* Row 1: search input + mode toggle buttons */}
           <div className="flex items-center gap-4">
@@ -678,7 +679,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-auto px-6 pb-2">
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
@@ -741,16 +742,16 @@ export default function CheckInPage() {
         {!isAllergyTab && (
           <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: '70px' }} />
-              <col style={{ width: '160px' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '50px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '110px' }} />
-              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '60px' }} />)}
-              {hasGapCol && <col style={{ width: '16px' }} />}
-              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '60px' }} />)}
-              {showActionCol && <col style={{ width: '120px' }} />}
+              <col style={{ width: '65px' }} />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '82px' }} />
+              <col style={{ width: '46px' }} />
+              <col style={{ width: '106px' }} />
+              <col style={{ width: '106px' }} />
+              {showMultiColumns && goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '58px' }} />)}
+              {hasGapCol && <col style={{ width: '14px' }} />}
+              {showMultiColumns && checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '58px' }} />)}
+              {showActionCol && <col style={{ width: '112px' }} />}
             </colgroup>
             <thead>
               {showMultiColumns && (goodieBagDates.length > 0 || checkinDates.length > 0) ? (
@@ -935,18 +936,26 @@ export default function CheckInPage() {
                         {(viewMode === 'goodiebag' ? (
                           isPickedUp ? (
                             isGoodieAlternate ? (
-                              <span className="inline-flex items-center gap-1.5 whitespace-nowrap" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', borderRadius: '999px', padding: '6px 14px', fontSize: '14px', fontWeight: 600 }}>
+                              <button
+                                onClick={() => setEditPickupData({ reg, childIndex })}
+                                className="inline-flex items-center gap-1.5 whitespace-nowrap transition hover:opacity-75"
+                                style={{ backgroundColor: '#FEF3C7', color: '#854F0B', borderRadius: '999px', padding: '6px 14px', fontSize: '14px', fontWeight: 600 }}
+                              >
                                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Alternate Pickup
-                              </span>
+                              </button>
                             ) : (
-                              <span className="inline-flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#FEF3C7' }}>
+                              <button
+                                onClick={() => setEditPickupData({ reg, childIndex })}
+                                className="inline-flex items-center justify-center transition hover:opacity-75"
+                                style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#FEF3C7' }}
+                              >
                                 <svg className="h-4 w-4 shrink-0" style={{ color: '#854F0B' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                              </span>
+                              </button>
                             )
                           ) : (
                             <button
@@ -1111,7 +1120,7 @@ export default function CheckInPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-white" style={{ fontWeight: 500 }}>{confirmData.childName}</p>
-                <p className="text-xs" style={{ color: '#8899aa' }}>{confirmData.grade} · T-shirt {confirmData.tshirtSize} · Parent: {confirmData.parentName}</p>
+                <p className="text-sm" style={{ color: '#8899aa' }}>{confirmData.grade} · T-shirt {confirmData.tshirtSize} · Parent: {confirmData.parentName}</p>
               </div>
             </div>
 
@@ -1140,6 +1149,73 @@ export default function CheckInPage() {
           </div>
         </div>
       )}
+
+      {/* ── Edit / Cancel pickup popup ──────────────────────────────────────── */}
+      {editPickupData && (() => {
+        const { reg, childIndex } = editPickupData;
+        const child = reg.children[childIndex];
+        const initials = `${child.first_name[0] ?? ''}${child.last_name[0] ?? ''}`.toUpperCase();
+        const isAlt = getPickupAlternateChildren(child).length > 0;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setEditPickupData(null)}
+          >
+            <div
+              className="animate-fade-in relative w-full max-w-sm p-6 shadow-2xl"
+              style={{ backgroundColor: '#1c1c1e', border: '1px solid #2a3a4a', borderRadius: '16px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setEditPickupData(null)}
+                className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md transition hover:bg-zinc-700"
+                style={{ fontSize: '16px', fontWeight: 400 }}
+              >×</button>
+
+              {/* Child info */}
+              <div className="mb-5 flex items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-500/40 text-sm font-bold text-slate-100">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">{child.first_name} {child.last_name}</p>
+                  <p className="text-sm text-slate-400">
+                    {child.grade} · T-shirt {child.tshirt_size} · Parent: {reg.parent_name}
+                  </p>
+                </div>
+              </div>
+
+              {/* Current pickup badge */}
+              <p className="mb-4 text-sm text-slate-400">
+                Picked up via{' '}
+                <span className="font-semibold text-white">{isAlt ? 'Alternate Pickup' : 'Parent Pickup'}</span>
+              </p>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setEditPickupData(null); openGoodieBagModal(reg, childIndex); }}
+                  className="w-full rounded-2xl py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: '#1e3a6e' }}
+                >
+                  Edit Pickup
+                </button>
+                <button
+                  onClick={async () => {
+                    setEditPickupData(null);
+                    await toggleCheckIn(reg.id, childIndex, true, undefined, 'goodiebag');
+                  }}
+                  disabled={loadingCheckin === `${reg.id}-${childIndex}`}
+                  className="w-full rounded-2xl py-3 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50"
+                  style={{ backgroundColor: '#7f1d1d', color: '#fca5a5' }}
+                >
+                  {loadingCheckin === `${reg.id}-${childIndex}` ? 'Canceling...' : 'Cancel Pickup'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Check-in / Goodie Bag modal ──────────────────────────────────────── */}
       {modalData && (() => {
@@ -1205,7 +1281,7 @@ export default function CheckInPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-white">{child.first_name} {child.last_name}</p>
-                      <p className="text-xs text-slate-400">{child.grade} · T-shirt {child.tshirt_size} · Parent: {reg.parent_name}</p>
+                      <p className="text-sm text-slate-400">{child.grade} · T-shirt {child.tshirt_size} · Parent: {reg.parent_name}</p>
                     </div>
                   </div>
                 )}
@@ -1368,7 +1444,7 @@ export default function CheckInPage() {
                     </div>
                     <h2 className="mb-2 text-2xl font-bold text-white">Goodie bag picked up!</h2>
                     <p className="font-semibold text-slate-200">{child.first_name} {child.last_name}</p>
-                    <p className="text-sm text-slate-400">{child.grade}</p>
+                    <p className="text-sm text-slate-400">{child.grade} · T-shirt {child.tshirt_size}</p>
                     <p className="mt-8 text-xs text-slate-600">Tap anywhere to close</p>
                   </div>
                 )}
