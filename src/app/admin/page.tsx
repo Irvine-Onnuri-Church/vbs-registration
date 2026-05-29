@@ -805,7 +805,7 @@ export default function AdminPage() {
 
       {/* Registrations list */}
       {viewMode === 'table' && (
-        <div className="overflow-x-auto rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
           {/* Search + Filters */}
           <div className="border-b border-slate-200 px-4 py-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -992,13 +992,16 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Scrollable table area — headers sticky, both axes scroll together */}
+          <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
+
           {!dataLoading && registrations.length === 0 && !dataError && (
             <div className="px-4 py-12 text-center text-sm text-slate-500">No registrations yet.</div>
           )}
 
           {registrations.length > 0 && (
             <table className="w-full text-left text-base">
-              <thead>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr className="border-b border-slate-200 bg-slate-50 text-sm font-semibold uppercase tracking-wider text-slate-500">
                   {[
                     { key: 'date', label: 'Date', sortable: true },
@@ -1089,6 +1092,8 @@ export default function AdminPage() {
               </tbody>
             </table>
           )}
+
+          </div>{/* end scrollable table area */}
 
           {/* Pagination footer */}
           {registrations.length > 0 && (
