@@ -746,24 +746,24 @@ export default function AdminPage() {
           style={{ border: '1.5px solid #93c5e8', borderRadius: 14, backgroundColor: filterType === 'regular' ? '#dbeeff' : 'transparent' }}
           className="flex items-center justify-between px-4 py-3 transition hover:bg-[#dbeeff]"
         >
-          <span style={{ color: '#2563a8' }} className="text-sm font-semibold">Regular VBS</span>
-          <span style={{ backgroundColor: '#3a7bd5' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{classCounts.regular || 0}</span>
+          <span style={{ color: '#2563a8' }} className="text-base font-semibold">Regular VBS</span>
+          <span style={{ backgroundColor: '#3a7bd5' }} className="ml-3 rounded-full px-2.5 py-0.5 text-base font-bold text-white">{classCounts.regular || 0}</span>
         </button>
         <button
           onClick={() => { setFilterType(filterType === 'beginner' ? null : 'beginner'); setViewMode('list'); setCurrentPage(0); }}
           style={{ border: '1.5px solid #6dd4b0', borderRadius: 14, backgroundColor: filterType === 'beginner' ? '#d0f5e8' : 'transparent' }}
           className="flex items-center justify-between px-4 py-3 transition hover:bg-[#d0f5e8]"
         >
-          <span style={{ color: '#0e7a5a' }} className="text-sm font-semibold">Beginner VBS</span>
-          <span style={{ backgroundColor: '#1a9e75' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{classCounts.beginner || 0}</span>
+          <span style={{ color: '#0e7a5a' }} className="text-base font-semibold">Beginner VBS</span>
+          <span style={{ backgroundColor: '#1a9e75' }} className="ml-3 rounded-full px-2.5 py-0.5 text-base font-bold text-white">{classCounts.beginner || 0}</span>
         </button>
         <button
           onClick={() => { setFilterType(filterType === 'appletree' ? null : 'appletree'); setViewMode('list'); setCurrentPage(0); }}
           style={{ border: '1.5px solid #9ec95a', borderRadius: 14, backgroundColor: filterType === 'appletree' ? '#dff0c8' : 'transparent' }}
           className="flex items-center justify-between px-4 py-3 transition hover:bg-[#dff0c8]"
         >
-          <span style={{ color: '#3a6b12' }} className="text-sm font-semibold">Apple Tree</span>
-          <span style={{ backgroundColor: '#5c9220' }} className="ml-3 rounded-full px-2.5 py-0.5 text-sm font-bold text-white">{appletreeCount}</span>
+          <span style={{ color: '#3a6b12' }} className="text-base font-semibold">Apple Tree</span>
+          <span style={{ backgroundColor: '#5c9220' }} className="ml-3 rounded-full px-2.5 py-0.5 text-base font-bold text-white">{appletreeCount}</span>
         </button>
       </div>
 
