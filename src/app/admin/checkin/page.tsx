@@ -237,12 +237,22 @@ export default function CheckInPage() {
             ...reg,
             children: reg.children.map((child, i) => {
               if (i !== childIndex) return child;
-              const updatedSessions: Record<string, Session | null> = {
-                ...(child.sessions ?? {}),
-                [sessionKey]: !currentlyCheckedIn
-                  ? { status: mode === 'goodiebag' ? 'picked_up' : 'checked_in', by: null, at: new Date().toISOString() }
-                  : null,
-              };
+              let updatedSessions: Record<string, Session | null>;
+              if (mode === 'goodiebag' && currentlyCheckedIn) {
+                // Cancel: null out all goodiebag sessions (covers historical dates)
+                updatedSessions = Object.fromEntries(
+                  Object.entries(child.sessions ?? {}).map(([k, v]) =>
+                    k.endsWith('_goodiebag') ? [k, null] : [k, v]
+                  )
+                );
+              } else {
+                updatedSessions = {
+                  ...(child.sessions ?? {}),
+                  [sessionKey]: !currentlyCheckedIn
+                    ? { status: mode === 'goodiebag' ? 'picked_up' : 'checked_in', by: null, at: new Date().toISOString() }
+                    : null,
+                };
+              }
               if (mode === 'goodiebag') {
                 return { ...child, sessions: updatedSessions };
               }
@@ -275,8 +285,6 @@ export default function CheckInPage() {
       .map((child, idx) => ({ reg, child, childIndex: idx }))
       .filter(({ child }) => !child.canceled),
   );
-
-  const todayKey = new Date().toISOString().slice(0, 10);
 
   const showMultiColumns = filterMode === 'all';
 
@@ -631,8 +639,6 @@ export default function CheckInPage() {
               )}
               {filteredRows.map(({ reg, child, childIndex }) => {
                 const isCheckedIn    = !!child.check_in?.checked_in;
-                const todayGBKey     = `${todayKey}_goodiebag`;
-                const isPickedUpToday = !!child.sessions?.[todayGBKey]?.status;
                 const isPickedUp      = viewMode === 'goodiebag' && hasAnyPickup(child);
                 const loadKey        = `${reg.id}-${childIndex}`;
                 const isLoading      = loadingCheckin === loadKey;
@@ -723,12 +729,9 @@ export default function CheckInPage() {
                         {!showMultiColumns && (viewMode === 'goodiebag' ? (
                           isPickedUp ? (
                             <button
-                              onClick={() => isPickedUpToday
-                                ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })
-                                : undefined
-                              }
-                              disabled={isLoading || !isPickedUpToday}
-                              className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1.5 disabled:cursor-default"
+                              onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'goodiebag' })}
+                              disabled={isLoading}
+                              className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1.5 transition hover:bg-amber-200 disabled:opacity-50"
                             >
                               <svg className="h-4 w-4 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

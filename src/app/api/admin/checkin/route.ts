@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { registrationId, childIndex, checkedIn, proxyChildren, mode } = await request.json();
+    const { registrationId, childIndex, checkedIn, proxyChildren, mode, pickupType } = await request.json();
     const effectiveMode: 'checkin' | 'goodiebag' = mode === 'goodiebag' ? 'goodiebag' : 'checkin';
 
     if (!registrationId || childIndex === undefined || checkedIn === undefined) {
@@ -38,9 +38,20 @@ export async function POST(request: Request) {
     const existingSessions: Record<string, unknown> = { ...(children[childIndex].sessions || {}) };
 
     if (effectiveMode === 'goodiebag') {
-      existingSessions[sessionKey] = checkedIn
-        ? { status: 'picked_up', by: null, at: new Date().toISOString() }
-        : null;
+      if (checkedIn) {
+        existingSessions[sessionKey] = {
+          status: 'picked_up',
+          by: null,
+          at: new Date().toISOString(),
+          ...(pickupType ? { pickup_type: pickupType } : {}),
+          ...(Array.isArray(proxyChildren) && proxyChildren.length ? { alternate_children: proxyChildren } : {}),
+        };
+      } else {
+        // Cancel: null out every goodiebag session key (covers historical dates)
+        for (const key of Object.keys(existingSessions)) {
+          if (key.endsWith('_goodiebag')) existingSessions[key] = null;
+        }
+      }
 
       children[childIndex] = {
         ...children[childIndex],
