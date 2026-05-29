@@ -42,6 +42,14 @@ type Child = {
   canceled_at?: string;
   created_at?: string;
   paypal_order_id?: string;
+  edit_history?: EditEntry[];
+};
+
+type EditEntry = {
+  field: string;
+  old_value: string;
+  new_value: string;
+  edited_at: string;
 };
 
 type Registration = {
@@ -394,6 +402,10 @@ export default function AdminPage() {
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState(0);
   const [drawerRegId, setDrawerRegId] = useState<string | null>(null);
+  const [editingChild, setEditingChild] = useState<{ regId: string; childIdx: number } | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editHistoryOpen, setEditHistoryOpen] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGrade, setFilterGrade] = useState<string | null>(null);
   const [filterTshirt, setFilterTshirt] = useState<string | null>(null);
@@ -555,6 +567,78 @@ export default function AdminPage() {
     setAuthLoading(false);
     window.dispatchEvent(new Event('admin-auth-changed'));
     await fetchRegistrations();
+  }
+
+  const EDITABLE_FIELDS = [
+    { key: 'first_name', label: 'First Name' },
+    { key: 'last_name', label: 'Last Name' },
+    { key: 'preferred_name', label: 'Preferred Name' },
+    { key: 'gender', label: 'Gender', options: ['Male', 'Female'] },
+    { key: 'date_of_birth', label: 'Date of Birth', type: 'date' },
+    { key: 'grade', label: 'Grade', options: ['Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th', '6th'] },
+    { key: 'tshirt_size', label: 'T-Shirt', options: ['YXS', 'YS', 'YM', 'YL', 'AS', 'AM', 'AL'] },
+    { key: 'allergy_information', label: 'Allergies' },
+    { key: 'medical_notes', label: 'Friend Request' },
+  ] as const;
+
+  function startEditing(regId: string, childIdx: number, child: Child) {
+    setEditingChild({ regId, childIdx });
+    setEditForm({
+      first_name: child.first_name,
+      last_name: child.last_name,
+      preferred_name: child.preferred_name ?? '',
+      gender: child.gender,
+      date_of_birth: child.date_of_birth,
+      grade: child.grade,
+      tshirt_size: child.tshirt_size,
+      allergy_information: child.allergy_information ?? '',
+      medical_notes: child.medical_notes ?? '',
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingChild) return;
+    setEditSaving(true);
+    const { regId, childIdx } = editingChild;
+    const reg = registrations.find((r) => r.id === regId);
+    if (!reg) { setEditSaving(false); return; }
+    const child = reg.children[childIdx];
+
+    // Build changes object — only include actually changed fields
+    const changes: Record<string, string> = {};
+    for (const [key, newVal] of Object.entries(editForm)) {
+      const oldVal = String((child as Record<string, unknown>)[key] ?? '');
+      if (oldVal !== newVal) changes[key] = newVal;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      setEditingChild(null);
+      setEditSaving(false);
+      return;
+    }
+
+    const res = await fetch('/api/admin/edit-child', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationId: regId, childIndex: childIdx, changes }),
+    });
+
+    if (res.ok) {
+      await fetchRegistrations();
+      setEditingChild(null);
+    }
+    setEditSaving(false);
+  }
+
+  async function undoLastEdit(regId: string, childIdx: number) {
+    const res = await fetch('/api/admin/edit-child', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationId: regId, childIndex: childIdx }),
+    });
+    if (res.ok) {
+      await fetchRegistrations();
+    }
   }
 
   const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled && c.class !== 'appletree'));
@@ -1192,7 +1276,7 @@ export default function AdminPage() {
         return (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-40 bg-black/30 transition-opacity" onClick={() => setDrawerRegId(null)} />
+            <div className="fixed inset-0 z-40 bg-black/30 transition-opacity" onClick={() => { setDrawerRegId(null); setEditingChild(null); setEditHistoryOpen(null); }} />
             {/* Drawer */}
             <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
               {/* Header */}
@@ -1201,14 +1285,14 @@ export default function AdminPage() {
                   <span>{regIndex + 1} of {registrations.length}</span>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => { if (regIndex > 0) setDrawerRegId(registrations[regIndex - 1].id); }}
+                      onClick={() => { if (regIndex > 0) { setDrawerRegId(registrations[regIndex - 1].id); setEditingChild(null); setEditHistoryOpen(null); } }}
                       disabled={regIndex === 0}
                       className="rounded-lg border border-slate-300 p-1 transition hover:bg-slate-100 disabled:opacity-30"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     <button
-                      onClick={() => { if (regIndex < registrations.length - 1) setDrawerRegId(registrations[regIndex + 1].id); }}
+                      onClick={() => { if (regIndex < registrations.length - 1) { setDrawerRegId(registrations[regIndex + 1].id); setEditingChild(null); setEditHistoryOpen(null); } }}
                       disabled={regIndex === registrations.length - 1}
                       className="rounded-lg border border-slate-300 p-1 transition hover:bg-slate-100 disabled:opacity-30"
                     >
@@ -1216,7 +1300,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-                <button onClick={() => setDrawerRegId(null)} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                <button onClick={() => { setDrawerRegId(null); setEditingChild(null); setEditHistoryOpen(null); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -1258,36 +1342,133 @@ export default function AdminPage() {
                 <div>
                   <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Children</h3>
                   <div className="space-y-3">
-                    {reg.children.map((child, idx) => (
-                      <div key={`${reg.id}-child-${idx}`} className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
-                            {child.first_name[0]}{child.last_name[0]}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-slate-900">
-                              {child.first_name} {child.last_name}
-                              {child.preferred_name && <span className="ml-1 font-normal text-slate-400">({child.preferred_name})</span>}
-                            </p>
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                              <span>{child.grade}</span>
-                              <span>{child.gender === 'Female' ? 'F' : child.gender === 'Male' ? 'M' : child.gender}</span>
-                              <span>DOB: {formatDob(child.date_of_birth)}</span>
+                    {reg.children.map((child, idx) => {
+                      const isEditing = editingChild?.regId === reg.id && editingChild?.childIdx === idx;
+                      const hasHistory = (child.edit_history?.length ?? 0) > 0;
+                      const showHistory = editHistoryOpen === idx;
+
+                      return (
+                        <div key={`${reg.id}-child-${idx}`} className="rounded-2xl border border-slate-200 p-4">
+                          {isEditing ? (
+                            /* ── Edit Form ── */
+                            <div className="space-y-3">
+                              <p className="text-sm font-semibold text-slate-700">Editing {child.first_name} {child.last_name}</p>
+                              {EDITABLE_FIELDS.map((f) => (
+                                <div key={f.key}>
+                                  <label className="block text-xs font-medium text-slate-500">{f.label}</label>
+                                  {'options' in f ? (
+                                    <select
+                                      className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
+                                      value={editForm[f.key] ?? ''}
+                                      onChange={(e) => setEditForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                                    >
+                                      <option value="">—</option>
+                                      {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      type={'type' in f ? f.type : 'text'}
+                                      className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
+                                      value={editForm[f.key] ?? ''}
+                                      onChange={(e) => setEditForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                              <div className="flex gap-2 pt-1">
+                                <button
+                                  onClick={saveEdit}
+                                  disabled={editSaving}
+                                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+                                >
+                                  {editSaving ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  onClick={() => setEditingChild(null)}
+                                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                              <span>T-shirt: {child.tshirt_size}</span>
-                              <span className="font-medium text-slate-700">{formatCurrency(child.price)}</span>
+                          ) : (
+                            /* ── Read-only View ── */
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
+                                {child.first_name[0]}{child.last_name[0]}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-slate-900">
+                                  {child.first_name} {child.last_name}
+                                  {child.preferred_name && <span className="ml-1 font-normal text-slate-400">({child.preferred_name})</span>}
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                                  <span>{child.grade}</span>
+                                  <span>{child.gender === 'Female' ? 'F' : child.gender === 'Male' ? 'M' : child.gender}</span>
+                                  <span>DOB: {formatDob(child.date_of_birth)}</span>
+                                </div>
+                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                                  <span>T-shirt: {child.tshirt_size}</span>
+                                  <span className="font-medium text-slate-700">{formatCurrency(child.price)}</span>
+                                </div>
+                                {child.allergy_information && (
+                                  <p className="mt-2 text-sm text-amber-700">Allergies/ Medical: {child.allergy_information}</p>
+                                )}
+                                {child.medical_notes && (
+                                  <p className="mt-1 text-sm text-slate-500">Friend: {child.medical_notes}</p>
+                                )}
+
+                                {/* Action buttons */}
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <button
+                                    onClick={() => startEditing(reg.id, idx, child)}
+                                    className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                                  >
+                                    Edit
+                                  </button>
+                                  {hasHistory && (
+                                    <>
+                                      <button
+                                        onClick={() => setEditHistoryOpen(showHistory ? null : idx)}
+                                        className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                                      >
+                                        {showHistory ? 'Hide History' : `History (${child.edit_history!.length})`}
+                                      </button>
+                                      <button
+                                        onClick={() => { if (confirm(`Undo last edit on ${child.first_name}?`)) undoLastEdit(reg.id, idx); }}
+                                        className="rounded-lg border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50"
+                                      >
+                                        Undo
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* Edit history */}
+                                {showHistory && child.edit_history && (
+                                  <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                                    <p className="mb-2 text-xs font-semibold text-slate-500">Edit History</p>
+                                    <div className="space-y-1.5">
+                                      {[...child.edit_history].reverse().map((entry, i) => (
+                                        <div key={i} className="text-xs text-slate-600">
+                                          <span className="font-medium">{entry.field}</span>:{' '}
+                                          <span className="text-red-500 line-through">{entry.old_value || '(empty)'}</span>{' '}
+                                          → <span className="text-emerald-600">{entry.new_value || '(empty)'}</span>
+                                          <span className="ml-2 text-slate-400">
+                                            {new Date(entry.edited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
+                                            {new Date(entry.edited_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            {child.allergy_information && (
-                              <p className="mt-2 text-sm text-amber-700">Allergies/ Medical: {child.allergy_information}</p>
-                            )}
-                            {child.medical_notes && (
-                              <p className="mt-1 text-sm text-slate-500">Friend: {child.medical_notes}</p>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

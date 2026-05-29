@@ -230,7 +230,7 @@ export default function CheckInPage() {
   const classStats = (() => {
     const classes = ['beginner', 'regular', 'appletree'] as const;
     return classes.map((cls) => {
-      const rows = allRows.filter(({ child }) => (child.class || 'regular') === cls);
+      const rows = allRows.filter(({ child }) => (child.class ?? (child.grade === 'Pre-K' ? 'beginner' : 'regular')) === cls);
       const checked = rows.filter(({ child }) => child.check_in?.checked_in).length;
       return { key: cls, total: rows.length, checked };
     }).filter((s) => s.total > 0);
