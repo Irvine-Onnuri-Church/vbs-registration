@@ -653,7 +653,7 @@ export default function CheckInPage() {
                         !showMultiColumns && viewMode === 'checkin' && isProxyPickup
                           ? { backgroundColor: '#f0faf6' }
                           : !showMultiColumns && rowActive
-                          ? { backgroundColor: viewMode === 'goodiebag' ? 'rgba(254, 243, 199, 0.4)' : 'rgba(236, 253, 245, 0.5)' }
+                          ? { backgroundColor: viewMode === 'goodiebag' ? undefined : 'rgba(236, 253, 245, 0.5)' }
                           : undefined
                       }
                     >
@@ -892,8 +892,8 @@ export default function CheckInPage() {
         </div>
       )}
 
-      {/* ── Check-in modal (checkin mode only) ──────────────────────────────── */}
-      {viewMode === 'checkin' && modalData && (() => {
+      {/* ── Check-in / Goodie Bag modal ──────────────────────────────────────── */}
+      {modalData && (() => {
         const { reg, childIndex } = modalData;
         const child = reg.children[childIndex];
         const initials = `${child.first_name[0] ?? ''}${child.last_name[0] ?? ''}`.toUpperCase();
