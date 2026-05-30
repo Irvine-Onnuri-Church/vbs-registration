@@ -586,8 +586,8 @@ export default function AdminPage() {
     { key: 'preferred_name', label: 'Preferred Name' },
     { key: 'gender', label: 'Gender', options: ['Male', 'Female'] },
     { key: 'date_of_birth', label: 'Date of Birth', type: 'date' },
-    { key: 'grade', label: 'Grade', options: ['Pre-K', 'K', '1st', '2nd', '3rd', '4th', '5th', '6th'] },
-    { key: 'tshirt_size', label: 'T-Shirt', options: ['YXS', 'YS', 'YM', 'YL', 'AS', 'AM', 'AL'] },
+    { key: 'grade', label: 'Grade', options: ['Pre-K', 'TK', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'] },
+    { key: 'tshirt_size', label: 'T-Shirt', options: ['3Y', '4Y', '5Y', 'XS', 'S', 'M', 'L', 'XL', 'Adult S', 'Adult M'] },
     { key: 'allergy_information', label: 'Allergies' },
     { key: 'medical_notes', label: 'Friend Request' },
   ] as const;
