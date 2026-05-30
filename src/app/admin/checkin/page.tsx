@@ -386,7 +386,7 @@ export default function CheckInPage() {
 
   const hasGapCol      = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
   const showActionCol  = !showMultiColumns && !isAllergyTab;
-  const staticColCount = 6; // Grade, Student Name, DOB, Gender, Parent, Mobile
+  const staticColCount = 7; // Grade, Last Name, First Name, DOB, Gender, Parent, Mobile
   const totalCols = showMultiColumns
     ? staticColCount + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
     : staticColCount + (showActionCol ? 1 : 0);
@@ -432,7 +432,15 @@ export default function CheckInPage() {
         ? va - vb
         : String(va).localeCompare(String(vb));
       if (cmp !== 0) return sortDir === 'asc' ? cmp : -cmp;
-      // Two-level sort: tiebreak Student Name by first name
+      // Two-level sort: grade → last name → first name
+      if (sortCol === 'grade') {
+        const la = a.child.last_name.toLowerCase();
+        const lb = b.child.last_name.toLowerCase();
+        const lcmp = la.localeCompare(lb);
+        if (lcmp !== 0) return lcmp;
+        return a.child.first_name.toLowerCase().localeCompare(b.child.first_name.toLowerCase());
+      }
+      // Two-level sort: last name → first name
       if (sortCol === 'last_name') {
         const fa = a.child.first_name.toLowerCase();
         const fb = b.child.first_name.toLowerCase();
@@ -467,7 +475,8 @@ export default function CheckInPage() {
 
   const SORTABLE_COLS = [
     { label: 'Grade',        key: 'grade',      sortable: true,  thClass: '' },
-    { label: 'Student Name', key: 'last_name',  sortable: true,  thClass: '' },
+    { label: 'Last Name',    key: 'last_name',  sortable: true,  thClass: '' },
+    { label: 'First Name',   key: 'first_name', sortable: true,  thClass: '' },
     { label: 'DOB',          key: 'dob',        sortable: true,  thClass: '' },
     { label: 'Gender',       key: 'gender',     sortable: true,  thClass: '' },
     { label: 'Parent',       key: 'parent',     sortable: true,  thClass: '' },
@@ -665,6 +674,17 @@ export default function CheckInPage() {
                 {label}
               </button>
             ))}
+            <button
+              onClick={() => { setSortCol('grade'); setSortDir('asc'); }}
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                sortCol === 'grade' && sortDir === 'asc' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4-4m-4 4V4" />
+              </svg>
+              Sort
+            </button>
             {dataLoading && <span className="text-sm text-slate-400">Loading...</span>}
 
 
@@ -859,7 +879,8 @@ export default function CheckInPage() {
                       style={{ borderBottom: '0.5px solid #e5e7eb' }}
                     >
                       <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.grade}</td>
-                      <td style={{ padding: '10px 6px', fontSize: '15px', fontWeight: 700, color: '#111827', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.last_name}, {child.first_name}</td>
+                      <td style={{ padding: '10px 6px 10px 6px', paddingRight: 0, fontSize: '14px', fontWeight: 700, color: '#111827', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.last_name}</td>
+                      <td style={{ padding: '10px 6px 10px 6px', paddingLeft: 0, fontSize: '14px', fontWeight: 700, color: '#111827', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{child.first_name}</td>
                       <td style={{ padding: '10px 6px', fontSize: '15px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                         {child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}
                       </td>
@@ -975,14 +996,15 @@ export default function CheckInPage() {
 
         {/* ── Single-column tabs: CSS Grid ────────────────────────────────── */}
         {!isAllergyTab && !showMultiColumns && (() => {
-          const G = '110px 1.6fr 1.1fr 80px 1.3fr 1.1fr 148px';
+          const G = '110px 1fr 1fr 1.1fr 80px 1.3fr 1.1fr 148px';
           const hCell: CSSProperties = { padding: '10px 12px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', overflow: 'hidden' };
-          const dCell: CSSProperties = { padding: '10px 12px', fontSize: '15px', color: '#6b7280', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' };
+          const dCell: CSSProperties = { padding: '10px 12px', fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' };
           return (
             <div style={{ width: '100%' }}>
               <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'grid', gridTemplateColumns: G, backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
                 <div style={hCell} onClick={() => handleSort('grade')}>GRADE <SortIcon col="grade" /></div>
-                <div style={hCell} onClick={() => handleSort('last_name')}>STUDENT NAME <SortIcon col="last_name" /></div>
+                <div style={hCell} onClick={() => handleSort('last_name')}>LAST NAME <SortIcon col="last_name" /></div>
+                <div style={hCell} onClick={() => handleSort('first_name')}>FIRST NAME <SortIcon col="first_name" /></div>
                 <div style={hCell} onClick={() => handleSort('dob')}>DOB <SortIcon col="dob" /></div>
                 <div style={{ ...hCell, cursor: 'default', userSelect: undefined }}>GENDER</div>
                 <div style={hCell} onClick={() => handleSort('parent')}>PARENT <SortIcon col="parent" /></div>
@@ -1016,7 +1038,8 @@ export default function CheckInPage() {
                       style={{ display: 'grid', gridTemplateColumns: G, borderBottom: '0.5px solid #e5e7eb', backgroundColor: rowBg, cursor: 'pointer', transition: 'background-color 0.15s ease' }}
                     >
                       <div style={dCell}>{child.grade}</div>
-                      <div style={{ ...dCell, fontWeight: 700, color: '#111827' }}>{child.last_name}, {child.first_name}</div>
+                      <div style={{ ...dCell, paddingRight: 0, fontWeight: 700, color: '#111827' }}>{child.last_name}</div>
+                      <div style={{ ...dCell, paddingLeft: 0, fontWeight: 700, color: '#111827' }}>{child.first_name}</div>
                       <div style={dCell}>{child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}</div>
                       <div style={dCell}>{child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}</div>
                       <div style={dCell}>{reg.parent_name}</div>
