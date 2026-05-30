@@ -726,7 +726,7 @@ export default function AdminPage() {
 
   // ── Dashboard ──
   return (
-    <div className="page-container py-10 space-y-8">
+    <div className="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       <div className="space-y-1">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Registration Dashboard</h1>

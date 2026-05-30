@@ -39,11 +39,12 @@ export default function Navbar() {
     { href: '/mypage', label: 'My Registration' },
   ];
 
-  const links = isAdmin ? adminLinks : publicLinks;
+  const isAdminPage = pathname?.startsWith('/admin');
+  const links = isAdmin && isAdminPage ? adminLinks : publicLinks;
 
   return (
     <header className="bg-[#0f1e5e] shadow-lg">
-      <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <div className={`mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8 ${isAdminPage ? 'max-w-[1800px]' : 'max-w-5xl'}`}>
         <Link href="/" className="min-w-0 shrink">
           <p className="truncate text-sm font-bold tracking-tight text-white sm:text-lg">{EVENT_INFO.name}</p>
           <p className="text-xs text-blue-300">🏰 {EVENT_INFO.subtitle}</p>
@@ -60,7 +61,7 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
-            {isAdmin ? (
+            {isAdmin && isAdminPage ? (
               <li>
                 <button
                   onClick={handleLogout}
