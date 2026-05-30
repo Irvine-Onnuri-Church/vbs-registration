@@ -306,9 +306,9 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 outerRadius={78}
                 paddingAngle={4}
                 dataKey="value"
-                label={({ cx, cy, midAngle, outerRadius, name, value, percent, fill }: any) => {
+                label={({ cx, cy, midAngle, outerRadius, index, name, value, percent, fill }: any) => {
                   const RADIAN = Math.PI / 180;
-                  const r = outerRadius + 20;
+                  const r = outerRadius + 20 + (index > 0 ? index * 28 : 0);
                   const x = cx + r * Math.cos(-midAngle * RADIAN);
                   const y = cy + r * Math.sin(-midAngle * RADIAN);
                   return (
@@ -1288,6 +1288,11 @@ export default function AdminPage() {
         const regIndex = registrations.findIndex((r) => r.id === drawerRegId);
         const reg = registrations[regIndex];
         if (!reg) return null;
+        const siblingRegs = registrations.filter((r) => r.id !== reg.id && r.email === reg.email);
+        const allChildren: { child: typeof reg.children[0]; regId: string; childIdx: number }[] = [
+          ...reg.children.map((child, idx) => ({ child, regId: reg.id, childIdx: idx })),
+          ...siblingRegs.flatMap((sr) => sr.children.map((child, idx) => ({ child, regId: sr.id, childIdx: idx }))),
+        ];
         return (
           <>
             {/* Backdrop */}
@@ -1326,7 +1331,7 @@ export default function AdminPage() {
                 <div className="flex flex-wrap gap-2">
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">{reg.payment_status}</span>
                   <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">{reg.registration_phase === 'early' ? 'Early Bird' : 'Regular'}</span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{reg.children.length} {reg.children.length === 1 ? 'child' : 'children'}</span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{allChildren.length} {allChildren.length === 1 ? 'child' : 'children'}</span>
                 </div>
 
                 {/* Parent name + date */}
@@ -1340,30 +1345,31 @@ export default function AdminPage() {
                 {/* Total paid */}
                 <div className="rounded-2xl bg-slate-900 px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Paid</p>
-                  <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(reg.children.filter((c) => !c.canceled).reduce((s, c) => s + c.price, 0))}</p>
-                  {reg.paypal_order_id && (
+                  <p className="mt-1 text-2xl font-bold text-white">{formatCurrency(allChildren.filter((c) => !c.child.canceled).reduce((s, c) => s + c.child.price, 0))}</p>
+                  {[reg, ...siblingRegs].filter((r) => r.paypal_order_id).map((r) => (
                     <a
-                      href={`https://www.paypal.com/merchant/transactions/details/${reg.paypal_order_id}`}
+                      key={r.id}
+                      href={`https://www.paypal.com/merchant/transactions/details/${r.paypal_order_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-block text-xs text-sky-400 underline hover:text-sky-300"
+                      className="mt-1 block text-xs text-sky-400 underline hover:text-sky-300"
                     >
-                      PayPal: {reg.paypal_order_id}
+                      PayPal: {r.paypal_order_id}
                     </a>
-                  )}
+                  ))}
                 </div>
 
                 {/* Children */}
                 <div>
                   <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Children</h3>
                   <div className="space-y-3">
-                    {reg.children.map((child, idx) => {
-                      const isEditing = editingChild?.regId === reg.id && editingChild?.childIdx === idx;
+                    {allChildren.map(({ child, regId, childIdx }, idx) => {
+                      const isEditing = editingChild?.regId === regId && editingChild?.childIdx === childIdx;
                       const hasHistory = (child.edit_history?.length ?? 0) > 0;
                       const showHistory = editHistoryOpen === idx;
 
                       return (
-                        <div key={`${reg.id}-child-${idx}`} className="rounded-2xl border border-slate-200 p-4">
+                        <div key={`${regId}-child-${childIdx}`} className="rounded-2xl border border-slate-200 p-4">
                           {isEditing ? (
                             /* ── Edit Form ── */
                             <div className="space-y-3">
@@ -1436,7 +1442,7 @@ export default function AdminPage() {
                                 {/* Action buttons */}
                                 <div className="mt-3 flex flex-wrap gap-2">
                                   <button
-                                    onClick={() => startEditing(reg.id, idx, child)}
+                                    onClick={() => startEditing(regId, childIdx, child)}
                                     className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
                                   >
                                     Edit
@@ -1450,7 +1456,7 @@ export default function AdminPage() {
                                         {showHistory ? 'Hide History' : `History (${child.edit_history!.length})`}
                                       </button>
                                       <button
-                                        onClick={() => { if (confirm(`Undo last edit on ${child.first_name}?`)) undoLastEdit(reg.id, idx); }}
+                                        onClick={() => { if (confirm(`Undo last edit on ${child.first_name}?`)) undoLastEdit(regId, childIdx); }}
                                         className="rounded-lg border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50"
                                       >
                                         Undo
