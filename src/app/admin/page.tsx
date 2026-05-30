@@ -38,6 +38,7 @@ type Child = {
   medical_notes: string | null;
   price: number;
   waived?: boolean;
+  phase?: string;
   class?: 'regular' | 'beginner' | 'appletree';
   canceled?: boolean;
   canceled_at?: string;
@@ -182,15 +183,21 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
   const phaseData = (() => {
     let early = 0;
     let regular = 0;
+    let outreach = 0;
     registrations.forEach((r) => {
-      const count = r.children.filter((c) => !c.canceled && matchesClassFilter(c)).length;
-      if (r.registration_phase === 'early') early += count;
-      else regular += count;
+      r.children.filter((c) => !c.canceled && matchesClassFilter(c)).forEach((c) => {
+        const phase = c.phase ?? r.registration_phase;
+        if (phase === 'outreach') outreach++;
+        else if (phase === 'early') early++;
+        else regular++;
+      });
     });
-    return [
+    const result: { name: string; value: number }[] = [
       { name: 'Early Bird', value: early },
       { name: 'Regular', value: regular },
     ];
+    if (outreach > 0) result.push({ name: 'Outreach(전도)', value: outreach });
+    return result;
   })();
 
   // ── 4. Gender ──
@@ -315,6 +322,7 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
               >
                 <Cell fill="#0284c7" />
                 <Cell fill="#f59e0b" />
+                <Cell fill="#7c3aed" />
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }} />
               <Legend wrapperStyle={{ fontSize: 14, fontWeight: 600 }} />
@@ -462,8 +470,10 @@ export default function AdminPage() {
     if (filterAllergies === false && hasAllergies) return false;
     if (filterGender && child.gender !== filterGender) return false;
     if (filterPhase) {
-      if (filterPhase === 'early' && reg.registration_phase !== 'early') return false;
-      if (filterPhase === 'regular' && reg.registration_phase === 'early') return false;
+      const childPhase = child.phase ?? reg.registration_phase;
+      if (filterPhase === 'outreach' && childPhase !== 'outreach') return false;
+      if (filterPhase === 'early' && childPhase !== 'early') return false;
+      if (filterPhase === 'regular' && (childPhase === 'early' || childPhase === 'outreach')) return false;
     }
     if (filterSource) {
       const src = reg.source || 'online';
@@ -912,6 +922,7 @@ export default function AdminPage() {
                   <option value="">Phase</option>
                   <option value="early">Early Bird</option>
                   <option value="regular">Regular</option>
+                  <option value="outreach">Outreach(전도)</option>
                 </select>
                 {filterPhase && (
                   <button onClick={() => { setFilterPhase(null); setCurrentPage(0); }} className="absolute right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-200 text-sky-700 hover:bg-sky-300">
@@ -1071,9 +1082,11 @@ export default function AdminPage() {
                     </td>
                     {filterType !== 'appletree' && (
                       <td className="whitespace-nowrap px-1.5 py-1">
-                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                          {reg.registration_phase === 'early' ? 'Early' : 'Regular'}
-                        </span>
+                        {(() => {
+                          const phase = child.phase ?? reg.registration_phase;
+                          if (phase === 'outreach') return <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">Outreach(전도)</span>;
+                          return <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">{phase === 'early' ? 'Early' : 'Regular'}</span>;
+                        })()}
                       </td>
                     )}
                     {filterType !== 'appletree' && (
