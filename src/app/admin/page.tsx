@@ -308,13 +308,12 @@ function GraphsView({ registrations }: { registrations: Registration[] }) {
                 dataKey="value"
                 label={({ cx, cy, midAngle, outerRadius, index, name, value, percent, fill }: any) => {
                   const RADIAN = Math.PI / 180;
-                  const r = outerRadius + 20 + (index > 0 ? index * 28 : 0);
+                  const r = outerRadius + 18 + (index > 0 ? index * 18 : 0);
                   const x = cx + r * Math.cos(-midAngle * RADIAN);
                   const y = cy + r * Math.sin(-midAngle * RADIAN);
                   return (
-                    <text x={x} y={y} textAnchor={x > cx + 5 ? 'start' : x < cx - 5 ? 'end' : 'middle'} fill={fill}>
-                      <tspan x={x} dy="-0.6em" style={{ fontSize: 14, fontWeight: 600 }}>{name}</tspan>
-                      <tspan x={x} dy="1.4em" style={{ fontSize: 16, fontWeight: 700 }}>{`${value} (${(percent * 100).toFixed(0)}%)`}</tspan>
+                    <text x={x} y={y} textAnchor={x > cx + 5 ? 'start' : x < cx - 5 ? 'end' : 'middle'} dominantBaseline="central" fill={fill} style={{ fontSize: 13, fontWeight: 600 }}>
+                      {`${name}  ${value} (${(percent * 100).toFixed(0)}%)`}
                     </text>
                   );
                 }}
