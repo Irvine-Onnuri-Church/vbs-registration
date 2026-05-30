@@ -734,7 +734,7 @@ export default function AdminPage() {
 
       {/* Summary stats */}
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
           <div className="p-6">
             <p className="text-sm font-semibold text-slate-500">Registrations</p>
             <p className="mt-1 text-3xl font-bold text-slate-900">{activeRegistrations.length}</p>
@@ -742,10 +742,6 @@ export default function AdminPage() {
           <div className="p-6">
             <p className="text-sm font-semibold text-slate-500">Children</p>
             <p className="mt-1 text-3xl font-bold text-slate-900">{totalChildren}</p>
-          </div>
-          <div className="rounded-none bg-[#0f1e5e] p-6">
-            <p className="text-sm font-semibold text-blue-300">Collected</p>
-            <p className="mt-1 text-3xl font-bold text-white">{formatCurrency(totalAmount)}</p>
           </div>
         </div>
       </div>
