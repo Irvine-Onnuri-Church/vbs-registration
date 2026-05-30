@@ -37,6 +37,7 @@ type Child = {
   allergy_information: string | null;
   medical_notes: string | null;
   price: number;
+  waived?: boolean;
   class?: 'regular' | 'beginner' | 'appletree';
   canceled?: boolean;
   canceled_at?: string;
@@ -644,7 +645,7 @@ export default function AdminPage() {
   const activeChildren = registrations.flatMap((r) => r.children.filter((c) => !c.canceled && c.class !== 'appletree'));
   const activeRegistrations = registrations.filter((r) => r.children.some((c) => !c.canceled && c.class !== 'appletree'));
   const totalAmount = activeRegistrations.reduce((sum, r) => {
-    const activeTotal = r.children.filter((c) => !c.canceled && c.class !== 'appletree').reduce((s, c) => s + c.price, 0);
+    const activeTotal = r.children.filter((c) => !c.canceled && c.class !== 'appletree' && !c.waived).reduce((s, c) => s + c.price, 0);
     return sum + activeTotal;
   }, 0);
   const totalChildren = activeChildren.length;
@@ -1084,7 +1085,7 @@ export default function AdminPage() {
                     )}
                     {filterType !== 'appletree' && (
                       <td className="whitespace-nowrap px-1.5 py-1 text-right font-medium text-slate-900">
-                        {formatCurrency(child.price)}
+                        {child.waived ? <span className="text-slate-400">Waived</span> : formatCurrency(child.price)}
                       </td>
                     )}
                   </tr>
@@ -1242,7 +1243,7 @@ export default function AdminPage() {
                                   <p className="text-slate-600">Friend to be with: {child.medical_notes}</p>
                                 )}
                               </div>
-                              {filterType !== 'appletree' && <span className="font-semibold text-slate-700">{formatCurrency(child.price)}</span>}
+                              {filterType !== 'appletree' && (child.waived ? <span className="font-semibold text-slate-400">Waived</span> : <span className="font-semibold text-slate-700">{formatCurrency(child.price)}</span>)}
                             </div>
                           </div>
                         ))}
@@ -1414,7 +1415,7 @@ export default function AdminPage() {
                                 </div>
                                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                                   <span>T-shirt: {child.tshirt_size}</span>
-                                  <span className="font-medium text-slate-700">{formatCurrency(child.price)}</span>
+                                  {child.waived ? <span className="font-medium text-slate-400">Waived</span> : <span className="font-medium text-slate-700">{formatCurrency(child.price)}</span>}
                                 </div>
                                 {child.allergy_information && (
                                   <p className="mt-2 text-sm text-amber-700">Allergies/ Medical: {child.allergy_information}</p>
