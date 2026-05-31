@@ -793,8 +793,8 @@ export default function CheckInPage() {
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {(goodieBagDates.length > 0 || checkinDates.length > 0) ? (
                 <>
-                  <tr style={{ backgroundColor: '#f5f6f8' }}>
-                    <th colSpan={staticColCount} className="py-2 px-1.5 pb-1 pt-2" />{/* static cols */}
+                  <tr style={{ backgroundColor: '#f5f6f8', boxShadow: '-24px 0 0 0 #f5f6f8, 24px 0 0 0 #f5f6f8' }}>
+                    <th colSpan={staticColCount} className="py-2 pb-1 pt-2" style={{ paddingLeft: 24 }} />{/* static cols */}
                     {goodieBagDates.length > 0 && (
                       <th
                         colSpan={goodieBagDates.length}
@@ -828,7 +828,7 @@ export default function CheckInPage() {
                       </th>
                     )}
                   </tr>
-                  <tr style={{ backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb' }}>
+                  <tr style={{ backgroundColor: '#f5f6f8', borderBottom: '0.5px solid #e5e7eb', boxShadow: '-24px 0 0 0 #f5f6f8, 24px 0 0 0 #f5f6f8' }}>
                     {SORTABLE_COLS.filter(c => c.key !== 'notes').map(({ label, key, sortable }) => (
                       <th
                         key={key}
