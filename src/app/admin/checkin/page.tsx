@@ -400,7 +400,7 @@ export default function CheckInPage() {
 
   const hasGapCol      = showMultiColumns && goodieBagDates.length > 0 && checkinDates.length > 0;
   const showActionCol  = !showMultiColumns && !isAllergyTab;
-  const staticColCount = 6; // Grade, Name, DOB, Gender, Parent, Mobile
+  const staticColCount = 7; // Grade, Name, DOB, Gender, T-Shirt, Parent, Mobile
   const totalCols = showMultiColumns
     ? staticColCount + goodieBagDates.length + checkinDates.length + (hasGapCol ? 1 : 0)
     : staticColCount + (showActionCol ? 1 : 0);
@@ -492,6 +492,7 @@ export default function CheckInPage() {
     { label: 'Student Name', key: 'last_name',  sortable: true,  thClass: '' },
     { label: 'DOB',          key: 'dob',        sortable: true,  thClass: '' },
     { label: 'Gender',       key: 'gender',     sortable: true,  thClass: '' },
+    { label: 'T-Shirt',      key: 'tshirt',     sortable: true,  thClass: '' },
     { label: 'Parent',       key: 'parent',     sortable: true,  thClass: '' },
     { label: 'Mobile',       key: 'mobile',     sortable: false, thClass: '' },
     { label: '',             key: 'notes',      sortable: false, thClass: '' },
@@ -791,17 +792,18 @@ export default function CheckInPage() {
         {!isAllergyTab && showMultiColumns && (
           <table className="w-full text-left" style={{ tableLayout: 'fixed' }}>
             <colgroup>
-              {/* Grade 9% | Name 10% | DOB 7% | Gender 5% | Parent 15% | Mobile 10% = 56% */}
-              {/* Goodie×2 = 24% | Gap 1% | Checkin 19% = 44% → Total 100% */}
-              <col style={{ width: '9%' }} />
+              {/* Grade 8% | Name 10% | DOB 7% | Gender 5% | T-Shirt 5% | Parent 13% | Mobile 9% = 57% */}
+              {/* Goodie×2 = 22% | Gap 1% | Checkin 20% = 43% → Total 100% */}
+              <col style={{ width: '8%' }} />
               <col style={{ width: '10%' }} />
               <col style={{ width: '7%' }} />
               <col style={{ width: '5%' }} />
-              <col style={{ width: '15%' }} />
-              <col style={{ width: '10%' }} />
-              {goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '12%' }} />)}
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '9%' }} />
+              {goodieBagDates.map((d) => <col key={`col-gb-${d}`} style={{ width: '11%' }} />)}
               {hasGapCol && <col style={{ width: '1%' }} />}
-              {checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '19%' }} />)}
+              {checkinDates.map((d) => <col key={`col-ci-${d}`} style={{ width: '20%' }} />)}
             </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               {(goodieBagDates.length > 0 || checkinDates.length > 0) ? (
@@ -912,6 +914,9 @@ export default function CheckInPage() {
                       <td style={{ padding: '8px 4px', fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                         {child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}
                       </td>
+                      <td style={{ padding: '8px 4px', fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {child.tshirt_size || <span className="text-slate-300">—</span>}
+                      </td>
                       <td style={{ padding: '8px 4px', fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{reg.parent_name}</td>
                       <td style={{ padding: '8px 4px', fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                         {reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}
@@ -1018,7 +1023,7 @@ export default function CheckInPage() {
 
         {/* ── Single-column tabs: CSS Grid ────────────────────────────────── */}
         {!isAllergyTab && !showMultiColumns && (() => {
-          const G = '110px 1.6fr 1.1fr 80px 1.3fr 1.1fr 148px';
+          const G = '110px 1.6fr 1.1fr 80px 72px 1.3fr 1.1fr 148px';
           const hCell: CSSProperties = { padding: '10px 12px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b7280', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', overflow: 'hidden' };
           const dCell: CSSProperties = { padding: '10px 12px', fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' };
           return (
@@ -1028,6 +1033,7 @@ export default function CheckInPage() {
                 <div style={hCell} onClick={() => handleSort('last_name')}>STUDENT NAME <SortIcon col="last_name" /></div>
                 <div style={hCell} onClick={() => handleSort('dob')}>DOB <SortIcon col="dob" /></div>
                 <div style={{ ...hCell, cursor: 'default', userSelect: undefined }}>GENDER</div>
+                <div style={hCell} onClick={() => handleSort('tshirt')}>T-SHIRT <SortIcon col="tshirt" /></div>
                 <div style={hCell} onClick={() => handleSort('parent')}>PARENT <SortIcon col="parent" /></div>
                 <div style={{ ...hCell, cursor: 'default', userSelect: undefined }}>MOBILE</div>
                 <div style={{ ...hCell, cursor: 'default', userSelect: undefined }} />
@@ -1057,6 +1063,7 @@ export default function CheckInPage() {
                       <div style={{ ...dCell, color: '#111827' }}>{child.last_name}, {child.first_name}</div>
                       <div style={dCell}>{child.date_of_birth ? formatDob(child.date_of_birth) : <span className="text-slate-300">—</span>}</div>
                       <div style={dCell}>{child.gender ? (child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : child.gender) : <span className="text-slate-300">—</span>}</div>
+                      <div style={dCell}>{child.tshirt_size || <span className="text-slate-300">—</span>}</div>
                       <div style={dCell}>{reg.parent_name}</div>
                       <div style={dCell}>{reg.phone_number ? formatPhone(reg.phone_number) : <span className="text-slate-300">—</span>}</div>
                       <div style={{ ...dCell, justifyContent: 'flex-end', padding: '6px 12px' }}>
