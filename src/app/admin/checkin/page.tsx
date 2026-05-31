@@ -83,6 +83,29 @@ const TSHIRT_ORDER: Record<string, number> = {
   '2Y': 5, '3Y': 6, '4Y': 7, '5Y': 8,
 };
 
+// Shared green tokens — circle badge and labeled pill pull from here.
+const STATUS_GREEN = { bg: '#C9EDDC', fg: '#0F6E56' } as const;
+
+// Icon-only green filled-circle confirmation badge (checked-in indicator, no text label).
+const CONFIRM_BADGE_STYLE: React.CSSProperties = {
+  width: 36, height: 36, borderRadius: '50%', backgroundColor: STATUS_GREEN.bg, flexShrink: 0,
+};
+function ConfirmBadge({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center justify-center transition hover:opacity-75 disabled:opacity-50"
+      style={CONFIRM_BADGE_STYLE}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={STATUS_GREEN.fg} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 13l4 4L19 7" />
+      </svg>
+    </button>
+  );
+}
+
 function lastName(fullName: string): string {
   return fullName.trim().split(/\s+/).pop()?.toLowerCase() ?? fullName.toLowerCase();
 }
@@ -1037,16 +1060,11 @@ export default function CheckInPage() {
                 const pickupAltChildren = viewMode === 'goodiebag' ? getPickupAlternateChildren(child) : [];
                 const isGoodieAlternate = pickupAltChildren.length > 0;
                 const rowActive         = viewMode === 'goodiebag' ? isPickedUp : isCheckedIn;
-                const rowBg: string | undefined = viewMode === 'checkin' && isProxyPickup
-                  ? '#f0faf6'
-                  : rowActive && viewMode === 'checkin'
-                  ? 'rgba(236, 253, 245, 0.5)'
-                  : undefined;
                 return (
                   <Fragment key={loadKey}>
                     <div
                       className={!rowActive && !isProxyPickup ? 'hover:bg-[#f5f6f8]' : ''}
-                      style={{ display: 'grid', gridTemplateColumns: G, borderBottom: '0.5px solid #e5e7eb', backgroundColor: rowBg, cursor: 'pointer', transition: 'background-color 0.15s ease' }}
+                      style={{ display: 'grid', gridTemplateColumns: G, borderBottom: '0.5px solid #e5e7eb', cursor: 'pointer', transition: 'background-color 0.15s ease' }}
                     >
                       <div style={dCell}>{child.grade}</div>
                       <div style={{ ...dCell, color: '#111827' }}>{child.last_name}, {child.first_name}</div>
@@ -1092,7 +1110,8 @@ export default function CheckInPage() {
                           <button
                             onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
                             disabled={isLoading}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-200 whitespace-nowrap transition disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition disabled:opacity-50 hover:opacity-80"
+                            style={{ backgroundColor: STATUS_GREEN.bg, color: STATUS_GREEN.fg }}
                           >
                             {isLoading ? 'Saving...' : (
                               <>
@@ -1103,27 +1122,18 @@ export default function CheckInPage() {
                               </>
                             )}
                           </button>
+                        ) : isCheckedIn ? (
+                          <ConfirmBadge
+                            onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
+                            disabled={isLoading}
+                          />
                         ) : (
                           <button
-                            onClick={() => isCheckedIn
-                              ? setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })
-                              : openCheckInModal(reg, childIndex)
-                            }
+                            onClick={() => openCheckInModal(reg, childIndex)}
                             disabled={isLoading}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
-                              isCheckedIn
-                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 whitespace-nowrap'
-                                : 'bg-slate-900 text-white hover:bg-slate-700 whitespace-nowrap'
-                            }`}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-slate-700 whitespace-nowrap transition disabled:opacity-50"
                           >
-                            {isLoading ? 'Saving...' : isCheckedIn ? (
-                              <>
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                Checked in
-                              </>
-                            ) : 'Check in'}
+                            {isLoading ? 'Saving...' : 'Check in'}
                           </button>
                         )}
                       </div>
@@ -1156,7 +1166,7 @@ export default function CheckInPage() {
                       </div>
                     )}
                     {viewMode === 'checkin' && isProxyPickup && (
-                      <div style={{ borderBottom: '0.5px solid #e5e7eb', backgroundColor: '#f0faf6', padding: '0 20px 12px 20px' }}>
+                      <div style={{ borderBottom: '0.5px solid #e5e7eb', padding: '0 20px 12px 20px' }}>
                         <div style={{ backgroundColor: '#e8f4ff', borderLeft: '2px solid #378ADD', borderRadius: '0 8px 8px 0', padding: '8px 14px' }}>
                           <div className="mb-2 flex items-center gap-1.5">
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
