@@ -414,6 +414,11 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [editSaving, setEditSaving] = useState(false);
   const [editHistoryOpen, setEditHistoryOpen] = useState<number | null>(null);
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [addChildSaving, setAddChildSaving] = useState(false);
+  const [addParentForm, setAddParentForm] = useState({ parentName: '', email: '', phoneNumber: '', emergencyContactName: '', emergencyContactPhone: '' });
+  const emptyChild = { firstName: '', lastName: '', gender: '', dateOfBirth: '', grade: '', tshirtSize: '', allergyInformation: '', medicalNotes: '', price: '', paymentType: '', paymentNotes: '' };
+  const [addChildrenForms, setAddChildrenForms] = useState([{ ...emptyChild }]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGrade, setFilterGrade] = useState<string | null>(null);
   const [filterTshirt, setFilterTshirt] = useState<string | null>(null);
@@ -436,6 +441,27 @@ export default function AdminPage() {
     setFilterPayment(null);
     setFilterType(null);
     setCurrentPage(0);
+  }
+
+  async function handleAddChild() {
+    if (!addParentForm.parentName || !addParentForm.email || !addParentForm.phoneNumber) return;
+    const validChildren = addChildrenForms.filter((c) => c.firstName && c.lastName && c.gender && c.dateOfBirth && c.grade && c.tshirtSize);
+    if (validChildren.length === 0) return;
+    setAddChildSaving(true);
+    try {
+      const res = await fetch('/api/admin/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentInfo: addParentForm, children: validChildren, photoConsent: true }),
+      });
+      if (res.ok) {
+        setShowAddChild(false);
+        setAddParentForm({ parentName: '', email: '', phoneNumber: '', emergencyContactName: '', emergencyContactPhone: '' });
+        setAddChildrenForms([{ ...emptyChild }]);
+        await fetchRegistrations();
+      }
+    } catch { /* ignore */ }
+    setAddChildSaving(false);
   }
 
   function handleSort(key: string) {
@@ -987,15 +1013,26 @@ export default function AdminPage() {
                 </button>
               )}
             </div>
-              <button
-                onClick={() => downloadCSV(filteredRows, filterType === 'appletree')}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                CSV
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => setShowAddChild(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-sky-500"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add a new Child
+                </button>
+                <button
+                  onClick={() => downloadCSV(filteredRows, filterType === 'appletree')}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  CSV
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1280,6 +1317,153 @@ export default function AdminPage() {
             })}
           </div>
         </div>
+      )}
+
+      {/* Add Child Modal */}
+      {showAddChild && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowAddChild(false)} />
+          <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8">
+            <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-slate-900">Add a new Child</h2>
+                <button onClick={() => setShowAddChild(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              {/* Parent Info */}
+              <div className="rounded-2xl border border-slate-200 p-5 mb-5">
+                <h3 className="text-base font-bold text-slate-900 mb-1">Parent / Guardian Information</h3>
+                <p className="text-sm text-slate-500 mb-4">Provide the main family contact details for registration and communication.</p>
+                <hr className="mb-4" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Parent / Guardian Name <span className="text-red-500">*</span></label>
+                    <input type="text" placeholder="Enter parent or guardian name" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={addParentForm.parentName} onChange={(e) => setAddParentForm((p) => ({ ...p, parentName: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Email <span className="text-red-500">*</span></label>
+                    <input type="email" placeholder="parent@example.com" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={addParentForm.email} onChange={(e) => setAddParentForm((p) => ({ ...p, email: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Phone Number <span className="text-red-500">*</span></label>
+                    <input type="tel" placeholder="(555) 123-4567" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={addParentForm.phoneNumber} onChange={(e) => setAddParentForm((p) => ({ ...p, phoneNumber: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Name</label>
+                    <input type="text" placeholder="Enter emergency contact name" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={addParentForm.emergencyContactName} onChange={(e) => setAddParentForm((p) => ({ ...p, emergencyContactName: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">Emergency Contact Phone Number</label>
+                    <input type="tel" placeholder="(555) 987-6543" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={addParentForm.emergencyContactPhone} onChange={(e) => setAddParentForm((p) => ({ ...p, emergencyContactPhone: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Children */}
+              {addChildrenForms.map((childForm, ci) => (
+                <div key={ci} className="rounded-2xl border border-slate-200 p-5 mb-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-base font-bold text-slate-900">Child Information {addChildrenForms.length > 1 ? `#${ci + 1}` : ''}</h3>
+                    {addChildrenForms.length > 1 && (
+                      <button onClick={() => setAddChildrenForms((prev) => prev.filter((_, i) => i !== ci))} className="text-xs text-red-500 hover:text-red-700 font-medium">Remove</button>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-500 mb-4">Add the details needed for attendance, classroom planning, and child safety.</p>
+                  <hr className="mb-4" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">First Name <span className="text-red-500">*</span></label>
+                      <input type="text" placeholder="First name" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.firstName} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, firstName: e.target.value } : c))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Last Name <span className="text-red-500">*</span></label>
+                      <input type="text" placeholder="Last name" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.lastName} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, lastName: e.target.value } : c))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Gender <span className="text-red-500">*</span></label>
+                      <select className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.gender} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, gender: e.target.value } : c))}>
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Date of Birth <span className="text-red-500">*</span></label>
+                      <input type="date" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.dateOfBirth} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, dateOfBirth: e.target.value } : c))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Grade <span className="text-red-500">*</span></label>
+                      <select className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.grade} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, grade: e.target.value } : c))}>
+                        <option value="">Select grade</option>
+                        <option value="Pre-K">Pre-K</option>
+                        <option value="TK">TK</option>
+                        <option value="Kindergarten">Kindergarten</option>
+                        <option value="1st Grade">1st Grade</option>
+                        <option value="2nd Grade">2nd Grade</option>
+                        <option value="3rd Grade">3rd Grade</option>
+                        <option value="4th Grade">4th Grade</option>
+                        <option value="5th Grade">5th Grade</option>
+                        <option value="6th Grade">6th Grade</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">T-shirt Size <span className="text-red-500">*</span></label>
+                      <select className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.tshirtSize} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, tshirtSize: e.target.value } : c))}>
+                        <option value="">Select size</option>
+                        {['3Y', '4Y', '5Y', 'XS', 'S', 'M', 'L', 'XL', 'Adult S', 'Adult M'].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-slate-700">Allergies / Other Medical Conditions</label>
+                    <textarea placeholder="List any food or environmental allergies and other medical conditions, or enter 'None'." rows={2} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.allergyInformation} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, allergyInformation: e.target.value } : c))} />
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-slate-700">Friend to be with</label>
+                    <textarea placeholder="Name a friend your child would like to be grouped with (optional)." rows={2} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.medicalNotes} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, medicalNotes: e.target.value } : c))} />
+                  </div>
+                  <hr className="my-4" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Amount Paid <span className="text-red-500">*</span></label>
+                      <input type="number" step="0.01" placeholder="0.00" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.price} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, price: e.target.value } : c))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Payment Type <span className="text-red-500">*</span></label>
+                      <select className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.paymentType} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, paymentType: e.target.value } : c))}>
+                        <option value="">Select payment type</option>
+                        <option value="cash">Cash</option>
+                        <option value="check">Check</option>
+                        <option value="paypal">PayPal</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-slate-700">Payment Notes</label>
+                    <input type="text" placeholder="Check number, PayPal transaction ID, etc. (optional)" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" value={childForm.paymentNotes} onChange={(e) => setAddChildrenForms((prev) => prev.map((c, i) => i === ci ? { ...c, paymentNotes: e.target.value } : c))} />
+                  </div>
+                </div>
+              ))}
+
+              <button
+                onClick={() => setAddChildrenForms((prev) => [...prev, { ...emptyChild }])}
+                className="mb-5 inline-flex items-center gap-1 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                + Add Another Child
+              </button>
+
+              <hr className="mb-5" />
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setShowAddChild(false)} className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
+                <button onClick={handleAddChild} disabled={addChildSaving} className="rounded-full bg-sky-600 px-6 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50">
+                  {addChildSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Side drawer for table row detail */}
