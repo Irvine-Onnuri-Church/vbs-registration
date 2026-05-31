@@ -31,7 +31,7 @@ export default function Navbar() {
 
   const adminLinks = [
     { href: '/admin', label: 'Dashboard' },
-    { href: '/admin/checkin', label: 'Arrivals' },
+    { href: '/admin/checkin', label: 'Check-in' },
   ];
 
   const publicLinks = [
