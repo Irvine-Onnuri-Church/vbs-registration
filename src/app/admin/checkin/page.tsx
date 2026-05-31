@@ -169,6 +169,7 @@ export default function CheckInPage() {
 
   // View mode
   const [viewMode, setViewMode]               = useState<ViewMode>('checkin');
+  const [showStats, setShowStats]             = useState(true);
 
   // Confirm popup
   const [confirmData, setConfirmData]         = useState<ConfirmData | null>(null);
@@ -551,18 +552,29 @@ export default function CheckInPage() {
     <div className="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       {/* Page header */}
-      <div className="space-y-1">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">{viewMode === 'goodiebag' ? 'Goodie Bag Pickup' : 'Check-in'}</h1>
-        <p className="text-sm text-slate-500">
-          {viewMode === 'goodiebag'
-            ? `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · May 17 & May 31, 2026`
-            : `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · ${EVENT_INFO.dates}`}
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{viewMode === 'goodiebag' ? 'Goodie Bag Pickup' : 'Check-in'}</h1>
+          <p className="text-sm text-slate-500">
+            {viewMode === 'goodiebag'
+              ? `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · May 17 & May 31, 2026`
+              : `${EVENT_INFO.name} · ${EVENT_INFO.subtitle} · ${EVENT_INFO.dates}`}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowStats((v) => !v)}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+        >
+          <svg className={`h-3.5 w-3.5 transition ${showStats ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+          {showStats ? 'Hide Stats' : 'Show Stats'}
+        </button>
       </div>
 
       {/* Stats bar */}
-      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+      {showStats && <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
         <div className="grid grid-cols-3 divide-x divide-slate-200">
           <div className="p-5 px-6">
             <p className="text-sm font-semibold text-slate-500">Total children</p>
@@ -591,7 +603,7 @@ export default function CheckInPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Table card */}
       <div className="overflow-hidden bg-white shadow-sm" style={{ borderRadius: '8px', border: '0.5px solid #e5e7eb' }}>
@@ -703,7 +715,7 @@ export default function CheckInPage() {
         </div>
 
         {/* Table */}
-        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)' }}>
+        <div style={{ overflowY: 'auto', overflowX: 'hidden', maxHeight: 'calc(100vh - 380px)', padding: '0 24px' }}>
 
         {/* ── Allergies/Medical emergency-reference table ───────────────── */}
         {isAllergyTab && (
