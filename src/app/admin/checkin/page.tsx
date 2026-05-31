@@ -937,7 +937,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {pickupAltChildren.map((pc, i) => {
@@ -966,7 +966,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {proxyChildren.map((pc, i) => {
@@ -1054,7 +1054,7 @@ export default function CheckInPage() {
                                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                                Alternate Pickup
+                                Authorized
                               </button>
                             ) : (
                               <button
@@ -1082,7 +1082,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              Alternate Pickup
+                              Authorized
                             </span>
                             <button
                               onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
@@ -1132,7 +1132,7 @@ export default function CheckInPage() {
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                               <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                             </svg>
-                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {pickupAltChildren.map((pc, i) => {
@@ -1159,7 +1159,7 @@ export default function CheckInPage() {
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                               <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                             </svg>
-                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Alternate Pickup Children</span>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {proxyChildren.map((pc, i) => {
@@ -1288,7 +1288,7 @@ export default function CheckInPage() {
               {/* Current pickup badge */}
               <p className="mb-4 text-sm text-slate-400">
                 Picked up via{' '}
-                <span className="font-semibold text-white">{isAlt ? 'Alternate Pickup' : 'Parent Pickup'}</span>
+                <span className="font-semibold text-white">{isAlt ? 'Authorized' : 'Parent Pickup'}</span>
               </p>
 
               {/* Actions */}
@@ -1423,7 +1423,7 @@ export default function CheckInPage() {
                           <path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                         </svg>
                         <div className="text-center">
-                          <p className="text-sm font-bold" style={{ color: pickupType === 'friend' ? '#185FA5' : '#ffffff' }}>Alternate Pickup</p>
+                          <p className="text-sm font-bold" style={{ color: pickupType === 'friend' ? '#185FA5' : '#ffffff' }}>Authorized</p>
                           <p className="text-xs" style={{ color: pickupType === 'friend' ? '#378ADD' : '#9ca3af' }}>Picking up on behalf</p>
                         </div>
                       </button>
@@ -1438,7 +1438,7 @@ export default function CheckInPage() {
                       <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                       </svg>
-                      <span className="text-sm font-semibold">Alternate Pickup</span>
+                      <span className="text-sm font-semibold">Authorized</span>
                     </div>
                     <h2 className="mb-1 text-lg font-bold text-white">Child Information</h2>
                     <p className="mb-4 text-sm text-slate-400">
