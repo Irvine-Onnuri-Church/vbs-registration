@@ -17,6 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" style={{ colorScheme: 'light' }}>
+      <head>
+        <meta name="format-detection" content="telephone=no" />
+      </head>
       <body className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
         <div className="flex min-h-screen flex-col">
           <Navbar />
