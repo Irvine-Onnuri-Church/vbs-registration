@@ -1089,29 +1089,20 @@ export default function CheckInPage() {
                             </button>
                           )
                         ) : isProxyPickup ? (
-                          <div className="inline-flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full text-xs font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#854F0B', padding: '3px 10px' }}>
-                              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
-                              </svg>
-                              Authorized
-                            </span>
-                            <button
-                              onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
-                              disabled={isLoading}
-                              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50"
-                              style={{ backgroundColor: '#e0f5ee', color: '#0F6E56', border: '1px solid #1D9E75' }}
-                            >
-                              {isLoading ? 'Saving...' : (
-                                <>
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  Checked in
-                                </>
-                              )}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setConfirmData({ regId: reg.id, childIndex, childName: `${child.first_name} ${child.last_name}`, grade: child.grade, tshirtSize: child.tshirt_size, parentName: reg.parent_name, mode: 'checkin' })}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-200 whitespace-nowrap transition disabled:opacity-50"
+                          >
+                            {isLoading ? 'Saving...' : (
+                              <>
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Authorized
+                              </>
+                            )}
+                          </button>
                         ) : (
                           <button
                             onClick={() => isCheckedIn
