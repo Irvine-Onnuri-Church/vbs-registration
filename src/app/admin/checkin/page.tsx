@@ -949,7 +949,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Parent of</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {pickupAltChildren.map((pc, i) => {
@@ -978,7 +978,7 @@ export default function CheckInPage() {
                               <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                                 <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                               </svg>
-                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
+                              <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Parent of</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {proxyChildren.map((pc, i) => {
@@ -1144,7 +1144,7 @@ export default function CheckInPage() {
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                               <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                             </svg>
-                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Parent of</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {pickupAltChildren.map((pc, i) => {
@@ -1171,7 +1171,7 @@ export default function CheckInPage() {
                             <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ color: '#185FA5' }}>
                               <circle cx="9" cy="9.5" r="4"/><path d="M1.5 22c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5"/><circle cx="16.5" cy="5.5" r="2.5"/><path d="M14 17.5c0-2.49 1.12-4.5 2.5-4.5s2.5 2.01 2.5 4.5"/>
                             </svg>
-                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Authorized Children</span>
+                            <span className="text-xs font-medium" style={{ color: '#185FA5' }}>Parent of</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {proxyChildren.map((pc, i) => {
