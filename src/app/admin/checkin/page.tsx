@@ -56,16 +56,6 @@ type ConfirmData   = {
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
-function getChildSessions(child: Child): Record<string, Session | null> {
-  const sessions: Record<string, Session | null> = { ...(child.sessions ?? {}) };
-  if (child.check_in?.checked_in && child.check_in.timestamp) {
-    const legacyKey = `${child.check_in.timestamp.slice(0, 10)}_checkin`;
-    if (!sessions[legacyKey]) {
-      sessions[legacyKey] = { status: 'checked_in', by: null, at: child.check_in.timestamp };
-    }
-  }
-  return sessions;
-}
 
 function formatDateCol(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -947,22 +937,19 @@ export default function CheckInPage() {
                         );
                       })}
                       {hasGapCol && <td className="p-0" />}
-                      {checkinDates.map((date) => {
-                        const s = getChildSessions(child)[`${date}_checkin`];
-                        return (
-                          <td key={`ci-${date}`} className="py-1 px-1.5 text-center">
-                            {s ? (
-                              <span className="inline-flex items-center justify-center rounded-full bg-teal-100 p-1">
-                                <svg className="h-3 w-3 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              </span>
-                            ) : (
-                              <span className="text-slate-300">—</span>
-                            )}
-                          </td>
-                        );
-                      })}
+                      {checkinDates.map((date) => (
+                        <td key={`ci-${date}`} className="py-1 px-1.5 text-center">
+                          {child.check_in?.checked_in ? (
+                            <span className="inline-flex items-center justify-center rounded-full p-1" style={{ backgroundColor: STATUS_GREEN.bg }}>
+                              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke={STATUS_GREEN.fg} strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+                      ))}
                     </tr>
                     {viewMode === 'goodiebag' && isGoodieAlternate && (
                       <tr style={{ borderBottom: '0.5px solid #e5e7eb' }}>
