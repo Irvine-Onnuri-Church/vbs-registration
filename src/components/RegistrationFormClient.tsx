@@ -64,11 +64,12 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
   const [paymentError, setPaymentError] = useState('');
   const nextChildId = useRef(2);
 
+  const deadline = program === 'prek' ? EVENT_INFO.beginnerRegistrationDeadline : EVENT_INFO.registrationDeadline;
   const registrationPhase = getRegistrationPhase(
     new Date(),
     EVENT_INFO.earlyRegistrationStart,
     EVENT_INFO.earlyRegistrationDeadline,
-    EVENT_INFO.registrationDeadline,
+    deadline,
   );
   const earlyRegistration = registrationPhase === 'early' || registrationPhase === 'not_open';
   const registrationOpen = registrationPhase !== 'closed';
@@ -174,7 +175,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
           <section className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:p-6">
             <h2 className="text-base font-semibold">Registration Closed</h2>
             <p className="mt-2">
-              Registration closed on <strong>{formatDateLabel(EVENT_INFO.registrationDeadline)}</strong>. Please contact us if you have questions.
+              Registration closed on <strong>{formatDateLabel(deadline)}</strong>. Please contact us if you have questions.
             </p>
           </section>
         )}
@@ -189,7 +190,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
             </div>
             <div className={`rounded-2xl border p-3 ${registrationPhase === 'regular' ? 'border-sky-400 bg-sky-100 font-semibold' : 'border-sky-200 bg-white/60'}`}>
               <p className="font-semibold">Regular Registration</p>
-              <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(EVENT_INFO.registrationDeadline)}</p>
+              <p className="mt-0.5 text-sky-700">{formatDateLabel(EVENT_INFO.regularRegistrationStart)} – {formatDateLabel(deadline)}</p>
               <p className="mt-1">{program === 'prek' ? `Pre-K: $${REGISTRATION_PRICING.regular.beginner}` : `TK–6th Grade: $${REGISTRATION_PRICING.regular.standard}`}</p>
             </div>
           </div>

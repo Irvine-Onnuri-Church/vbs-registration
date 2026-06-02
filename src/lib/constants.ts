@@ -20,7 +20,8 @@ export const EVENT_INFO = {
   earlyRegistrationStart: '2026-04-05',
   earlyRegistrationDeadline: '2026-05-03',
   regularRegistrationStart: '2026-05-04',
-  registrationDeadline: '2026-05-31',
+  registrationDeadline: '2026-06-07',
+  beginnerRegistrationDeadline: '2026-05-31',
   emailFrom: `VBS 2026 <noreply@iocvbs.life>`,
 } as const;
 
