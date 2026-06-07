@@ -174,9 +174,25 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
         {registrationPhase === 'closed' && (
           <section className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 sm:p-6">
             <h2 className="text-base font-semibold">Registration Closed</h2>
-            <p className="mt-2">
-              Registration closed on <strong>{formatDateLabel(deadline)}</strong>. Please contact us if you have questions.
-            </p>
+            <div className="mt-2 space-y-3">
+              <p>안녕하세요, 온누리 VBS 팀입니다.</p>
+              <p>하나님의 은혜 가운데 많은 아이들이 등록하여 올해 VBS를 준비하고 있습니다.</p>
+              <p>원활한 프로그램 준비를 위해 등록을 마감하려고 합니다.</p>
+              <p>
+                문의가 있으시면 <strong>(818) 312-2173</strong> 으로 연락주세요.
+                <br />
+                감사합니다.
+              </p>
+              <hr className="border-red-200" />
+              <p>Hello,</p>
+              <p>This is the Onnuri VBS Team.</p>
+              <p>
+                We will be closing registration now.
+                <br />
+                If you have any questions, please contact us at <strong>(818) 312-2173</strong>.
+              </p>
+              <p>Thank you for your support.</p>
+            </div>
           </section>
         )}
 
