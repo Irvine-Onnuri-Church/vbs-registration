@@ -179,7 +179,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
               <p>하나님의 은혜 가운데 많은 아이들이 등록하여 올해 VBS를 준비하고 있습니다.</p>
               <p>원활한 프로그램 준비를 위해 등록을 마감하려고 합니다.</p>
               <p>
-                문의가 있으시면 <strong>(818) 312-2173</strong> 으로 연락주세요.
+                문의가 있으시면 <strong>{program === 'prek' ? '(714) 351-1138' : '(818) 312-2173'}</strong> 으로 연락주세요.
                 <br />
                 감사합니다.
               </p>
@@ -189,7 +189,7 @@ export default function RegistrationFormClient({ program }: { program: 'prek' | 
               <p>
                 We will be closing registration now.
                 <br />
-                If you have any questions, please contact us at <strong>(818) 312-2173</strong>.
+                If you have any questions, please contact us at <strong>{program === 'prek' ? '(714) 351-1138' : '(818) 312-2173'}</strong>.
               </p>
               <p>Thank you for your support.</p>
             </div>
