@@ -284,7 +284,7 @@ export default function CheckinPage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={`Search students in ${selectedGrade} grade…`}
-        className="w-full max-w-md rounded-2xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
 
       {/* Classes */}
