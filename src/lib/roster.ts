@@ -74,7 +74,17 @@ export const CLASS_ORDER: Record<Grade, string[]> = Object.fromEntries(
 ) as Record<Grade, string[]>;
 
 export type Col = 'L' | 'R';
-export type StudentRecord = { grade: Grade; cls: string; col: Col; order: number; name: string; note: string };
+// `cls === ''` means an unassigned Saturday-only student (lives only in the banner).
+// `saturdayOnly` stays true even after assignment so the SAT badge persists.
+export type StudentRecord = {
+  grade: Grade;
+  cls: string;
+  col: Col;
+  order: number;
+  name: string;
+  note: string;
+  saturdayOnly?: boolean;
+};
 export type RosterMap = Record<string, StudentRecord>;
 
 // Deterministic id for an original (seeded) student. Format is identical to the

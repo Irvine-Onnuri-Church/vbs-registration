@@ -39,14 +39,17 @@ function textColorFor(hex: string): string {
 
 // ─── Derived view model ─────────────────────────────────────────────────────
 
-type Student = { id: string; name: string; note: string };
+type Student = { id: string; name: string; note: string; sat: boolean };
 type GroupedClass = { className: string; left: Student[]; right: Student[] };
 
 // Group the flat roster map into ordered classes/columns for rendering.
+// Unassigned Saturday students (cls === '') are skipped here — they render in the
+// banner, not in class cards.
 function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
-  const byGradeClass: Record<string, Record<string, Array<{ id: string; col: 'L' | 'R'; order: number; name: string; note: string }>>> = {};
+  const byGradeClass: Record<string, Record<string, Array<{ id: string; col: 'L' | 'R'; order: number; name: string; note: string; sat: boolean }>>> = {};
   for (const [id, r] of Object.entries(map)) {
-    ((byGradeClass[r.grade] ??= {})[r.cls] ??= []).push({ id, col: r.col, order: r.order, name: r.name, note: r.note });
+    if (!r.cls) continue;
+    ((byGradeClass[r.grade] ??= {})[r.cls] ??= []).push({ id, col: r.col, order: r.order, name: r.name, note: r.note, sat: !!r.saturdayOnly });
   }
 
   const out: Record<string, GroupedClass[]> = {};
@@ -54,13 +57,39 @@ function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
     const classList = CLASS_ORDER[grade] ?? [];
     out[grade] = classList.map((cls) => {
       const arr = byGradeClass[grade]?.[cls] ?? [];
-      const toStudent = (s: { id: string; name: string; note: string }): Student => ({ id: s.id, name: s.name, note: s.note });
+      const toStudent = (s: { id: string; name: string; note: string; sat: boolean }): Student => ({ id: s.id, name: s.name, note: s.note, sat: s.sat });
       const left = arr.filter((s) => s.col === 'L').sort((a, b) => a.order - b.order).map(toStudent);
       const right = arr.filter((s) => s.col === 'R').sort((a, b) => a.order - b.order).map(toStudent);
       return { className: cls, left, right };
     });
   }
   return out;
+}
+
+// Unassigned Saturday-only students for a grade (banner contents).
+function bannerStudentsFor(map: RosterMap, grade: Grade): Student[] {
+  return Object.entries(map)
+    .filter(([, r]) => r.grade === grade && r.saturdayOnly && !r.cls)
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([id, r]) => ({ id, name: r.name, note: r.note, sat: true }));
+}
+
+function SatBadge() {
+  return (
+    <span className="rounded bg-amber-500 px-1 py-0.5 text-[10px] font-bold uppercase leading-none text-white">SAT</span>
+  );
+}
+
+function CheckCircle({ done }: { done: boolean }) {
+  return done ? (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: CHECKED_GREEN }}>
+      <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+  ) : (
+    <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300" />
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────
@@ -272,6 +301,53 @@ export default function CheckinPage() {
     }
   }
 
+  // Create an unassigned Saturday-only student (lives in the banner).
+  async function addSaturdayStudent(grade: Grade, name: string, note = ''): Promise<'ok' | 'dup' | 'err'> {
+    const trimmed = name.trim();
+    if (!trimmed) return 'err';
+    editBusyRef.current = true;
+    try {
+      const res = await fetch('/api/admin/roster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ op: 'add', grade, name: trimmed, note, saturdayOnly: true, unassigned: true }),
+      });
+      if (res.status === 409) return 'dup';
+      if (!res.ok) return 'err';
+      return 'ok';
+    } catch {
+      return 'err';
+    } finally {
+      editBusyRef.current = false;
+      await loadRoster(true);
+    }
+  }
+
+  // Assign a banner (Saturday) student to a real class.
+  async function assignStudent(id: string, cls: string): Promise<'ok' | 'dup' | 'err'> {
+    editBusyRef.current = true;
+    setRosterMap((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], cls } } : prev)); // optimistic move
+    try {
+      const res = await fetch('/api/admin/roster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ op: 'assign', id, cls }),
+      });
+      if (res.status === 409) return 'dup';
+      if (!res.ok) return 'err';
+      return 'ok';
+    } catch {
+      return 'err';
+    } finally {
+      editBusyRef.current = false;
+      await loadRoster(true);
+    }
+  }
+
   async function renameStudent(id: string, name: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -340,6 +416,12 @@ export default function CheckinPage() {
   }, [gradeClasses, checked]);
 
   const gradeTotal = gradeCount.total;
+
+  const bannerStudents = useMemo(() => bannerStudentsFor(rosterMap, selectedGrade), [rosterMap, selectedGrade]);
+  const bannerCount = useMemo(
+    () => ({ done: bannerStudents.filter((s) => checked[s.id]).length, total: bannerStudents.length }),
+    [bannerStudents, checked],
+  );
 
   // ─── Auth screens ─────────────────────────────────────────────────────────
 
@@ -450,7 +532,12 @@ export default function CheckinPage() {
           grade={selectedGrade}
           gradeColor={gradeColor}
           classes={gradeClasses}
+          bannerStudents={bannerStudents}
+          bannerCount={bannerCount}
+          checked={checked}
           onAdd={addStudent}
+          onAddSaturday={addSaturdayStudent}
+          onAssign={assignStudent}
           onRename={renameStudent}
           onRemove={removeStudent}
         />
@@ -465,6 +552,8 @@ export default function CheckinPage() {
           search={search}
           onSearch={setSearch}
           syncError={syncError}
+          bannerStudents={bannerStudents}
+          bannerCount={bannerCount}
         />
       )}
     </div>
@@ -483,6 +572,8 @@ function CheckInView({
   search,
   onSearch,
   syncError,
+  bannerStudents,
+  bannerCount,
 }: {
   selectedGrade: Grade;
   gradeColor: string;
@@ -493,6 +584,8 @@ function CheckInView({
   search: string;
   onSearch: (v: string) => void;
   syncError: string;
+  bannerStudents: Student[];
+  bannerCount: { done: number; total: number };
 }) {
   const searchLower = search.trim().toLowerCase();
   const hasRoster = classes.length > 0;
@@ -509,6 +602,9 @@ function CheckInView({
         </span>
         {syncError && <span className="ml-auto text-sm font-medium text-red-600">{syncError}</span>}
       </div>
+
+      {/* Saturday-only / Unassigned banner */}
+      <SaturdayBanner mode="checkin" students={bannerStudents} count={bannerCount} checked={checked} onToggle={onToggle} />
 
       {/* Search */}
       <input
@@ -570,17 +666,12 @@ function StudentRow({ student, done, onToggle }: { student: Student; done: boole
         className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${done ? '' : 'hover:bg-slate-50'}`}
         style={done ? { backgroundColor: 'rgba(29, 158, 117, 0.5)' } : undefined}
       >
-        {done ? (
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: CHECKED_GREEN }}>
-            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-        ) : (
-          <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300" />
-        )}
+        <CheckCircle done={done} />
         <span className="min-w-0">
-          <span className="block text-sm text-slate-800">{student.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-sm text-slate-800">{student.name}</span>
+            {student.sat && <SatBadge />}
+          </span>
           {student.note && <span className="block text-xs text-amber-600">{student.note}</span>}
         </span>
       </button>
@@ -588,20 +679,88 @@ function StudentRow({ student, done, onToggle }: { student: Student; done: boole
   );
 }
 
+// ─── Saturday-only / Unassigned banner ──────────────────────────────────────
+
+function SaturdayBanner({
+  mode,
+  students,
+  count,
+  checked,
+  onToggle,
+  assignClasses,
+  onAssign,
+}: {
+  mode: 'checkin' | 'edit';
+  students: Student[];
+  count: { done: number; total: number };
+  checked: Record<string, boolean>;
+  onToggle?: (id: string) => void;
+  assignClasses?: string[];
+  onAssign?: (id: string, cls: string) => void;
+}) {
+  if (students.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50/60 px-5 py-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-base font-bold text-amber-800">Unassigned · Saturday only</span>
+        <span className="text-sm font-semibold text-amber-700">{count.done} / {count.total}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {students.map((s) => (
+          <div key={s.id} className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-3 py-1.5">
+            {mode === 'checkin' && (
+              <button onClick={() => onToggle?.(s.id)} aria-pressed={!!checked[s.id]} aria-label={`Check in ${s.name}`} className="flex items-center">
+                <CheckCircle done={!!checked[s.id]} />
+              </button>
+            )}
+            <span className="text-sm text-slate-800">{s.name}</span>
+            <SatBadge />
+            {mode === 'edit' && (
+              <select
+                value=""
+                onChange={(e) => { if (e.target.value) onAssign?.(s.id, e.target.value); }}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
+              >
+                <option value="" disabled>Assign to…</option>
+                {(assignClasses ?? []).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Edit view ──────────────────────────────────────────────────────────────
+
+const UNASSIGNED_VALUE = '__sat_unassigned__';
 
 function EditView({
   grade,
   gradeColor,
   classes,
+  bannerStudents,
+  bannerCount,
+  checked,
   onAdd,
+  onAddSaturday,
+  onAssign,
   onRename,
   onRemove,
 }: {
   grade: Grade;
   gradeColor: string;
   classes: GroupedClass[];
+  bannerStudents: Student[];
+  bannerCount: { done: number; total: number };
+  checked: Record<string, boolean>;
   onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  onAddSaturday: (grade: Grade, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  onAssign: (id: string, cls: string) => Promise<'ok' | 'dup' | 'err'>;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
 }) {
@@ -621,19 +780,29 @@ function EditView({
   async function submitQuickAdd() {
     const name = qaName.trim();
     if (!name) return;
-    const result = await onAdd(qaGrade, qaClass, name, qaNote.trim());
+    const isUnassigned = qaClass === UNASSIGNED_VALUE;
+    const where = isUnassigned ? `${qaGrade} Saturday list` : qaClass;
+    const result = isUnassigned
+      ? await onAddSaturday(qaGrade, name, qaNote.trim())
+      : await onAdd(qaGrade, qaClass, name, qaNote.trim());
     if (result === 'dup') {
-      setQaMsg({ type: 'warn', text: `"${name}" is already in ${qaClass}.` });
+      setQaMsg({ type: 'warn', text: `"${name}" is already in ${where}.` });
       return;
     }
     if (result === 'err') {
       setQaMsg({ type: 'warn', text: 'Could not add — try again.' });
       return;
     }
-    setQaMsg({ type: 'ok', text: `Added ${name} to ${qaClass} ✓` });
+    setQaMsg({ type: 'ok', text: `Added ${name} to ${where} ✓` });
     setQaName('');
     setQaNote('');
     nameRef.current?.focus();
+  }
+
+  async function handleAssign(id: string, cls: string) {
+    const result = await onAssign(id, cls);
+    if (result === 'dup') setQaMsg({ type: 'warn', text: `A student with that name is already in ${cls}.` });
+    else if (result === 'err') setQaMsg({ type: 'warn', text: 'Could not assign — try again.' });
   }
 
   return (
@@ -665,6 +834,7 @@ function EditView({
             {(CLASS_ORDER[qaGrade] ?? []).map((cls) => (
               <option key={cls} value={cls}>{cls}</option>
             ))}
+            <option value={UNASSIGNED_VALUE}>Unassigned (Saturday only)</option>
           </select>
         </div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -696,6 +866,16 @@ function EditView({
           </p>
         )}
       </div>
+
+      {/* Saturday-only / Unassigned banner — assign chips */}
+      <SaturdayBanner
+        mode="edit"
+        students={bannerStudents}
+        count={bannerCount}
+        checked={checked}
+        assignClasses={CLASS_ORDER[grade]}
+        onAssign={handleAssign}
+      />
 
       {/* Class cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1rem' }}>
@@ -818,6 +998,7 @@ function EditStudentRow({
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
+      {student.sat && <SatBadge />}
       <button
         onClick={() => onRemove(student.id)}
         aria-label={`Remove ${student.name}`}

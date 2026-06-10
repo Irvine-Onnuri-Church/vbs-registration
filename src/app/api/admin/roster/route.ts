@@ -82,6 +82,7 @@ export async function POST(request: Request) {
     const op = body?.op;
 
     if (op === 'add') return await handleAdd(body);
+    if (op === 'assign') return await handleAssign(body);
     if (op === 'rename') return await handleRename(body);
     if (op === 'remove') return await handleRemove(body);
 
@@ -93,16 +94,20 @@ export async function POST(request: Request) {
   }
 }
 
-async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown; note?: unknown }) {
+async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown; note?: unknown; saturdayOnly?: unknown; unassigned?: unknown }) {
   const grade = body.grade as Grade;
   const cls = typeof body.cls === 'string' ? body.cls : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, MAX_NOTE) : '';
+  const saturdayOnly = body.saturdayOnly === true;
+  // A Saturday-only student created with no class is "unassigned" — it lives in
+  // the banner until an admin assigns it to a class.
+  const wantUnassigned = saturdayOnly && (body.unassigned === true || !cls);
 
   if (!GRADE_ORDER.includes(grade)) {
     return NextResponse.json({ error: 'Invalid grade.' }, { status: 400, headers: NO_STORE });
   }
-  if (!(CLASS_ORDER[grade] ?? []).includes(cls)) {
+  if (!wantUnassigned && !(CLASS_ORDER[grade] ?? []).includes(cls)) {
     return NextResponse.json({ error: 'Invalid class.' }, { status: 400, headers: NO_STORE });
   }
   if (!name || name.length > MAX_NAME) {
@@ -118,19 +123,39 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
   const result = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const map = (snap.data() as RosterMap | undefined) ?? {};
-    const inClass = Object.values(map).filter((r) => r.grade === grade && r.cls === cls);
 
-    if (inClass.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
+    // Pool to dedupe / order against: the unassigned-Saturday list for the grade,
+    // or the target class otherwise.
+    const pool = wantUnassigned
+      ? Object.values(map).filter((r) => r.grade === grade && r.saturdayOnly && !r.cls)
+      : Object.values(map).filter((r) => r.grade === grade && r.cls === cls);
+
+    if (pool.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
       return { duplicate: true as const };
     }
 
-    const leftCount = inClass.filter((r) => r.col === 'L').length;
-    const rightCount = inClass.filter((r) => r.col === 'R').length;
-    const col: 'L' | 'R' = leftCount <= rightCount ? 'L' : 'R';
-    const order = inClass.filter((r) => r.col === col).reduce((m, r) => Math.max(m, r.order), -1) + 1;
+    let col: 'L' | 'R';
+    let order: number;
+    if (wantUnassigned) {
+      col = 'L'; // column is irrelevant for the banner; keep a stable value
+      order = pool.reduce((m, r) => Math.max(m, r.order), -1) + 1;
+    } else {
+      const leftCount = pool.filter((r) => r.col === 'L').length;
+      const rightCount = pool.filter((r) => r.col === 'R').length;
+      col = leftCount <= rightCount ? 'L' : 'R';
+      order = pool.filter((r) => r.col === col).reduce((m, r) => Math.max(m, r.order), -1) + 1;
+    }
 
     const id = `new|${randomUUID()}`;
-    const student: StudentRecord = { grade, cls, col, order, name, note };
+    const student: StudentRecord = {
+      grade,
+      cls: wantUnassigned ? '' : cls,
+      col,
+      order,
+      name,
+      note,
+      ...(saturdayOnly ? { saturdayOnly: true } : {}),
+    };
     tx.set(ref, { [id]: student }, { merge: true });
     return { id, student };
   });
@@ -142,8 +167,54 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
     );
   }
 
-  console.log(`[roster][POST] add ${result.id} (${name}) -> ${grade}/${cls}/${result.student.col}`);
+  console.log(`[roster][POST] add ${result.id} (${name}) -> ${grade}/${result.student.cls || 'UNASSIGNED'}/${result.student.col}`);
   return NextResponse.json({ success: true, id: result.id, student: result.student }, { headers: NO_STORE });
+}
+
+// Assign an (unassigned Saturday) student to a real class: sets cls/col/order,
+// preserves saturdayOnly/name/note. Returns 409 on a name clash in the target.
+async function handleAssign(body: { id?: unknown; cls?: unknown }) {
+  const id = typeof body.id === 'string' ? body.id : '';
+  const cls = typeof body.cls === 'string' ? body.cls : '';
+
+  if (!STUDENT_ID_RE.test(id)) {
+    return NextResponse.json({ error: 'Invalid id.' }, { status: 400, headers: NO_STORE });
+  }
+  if (!/^[A-Za-z0-9]+$/.test(cls)) {
+    return NextResponse.json({ error: 'Invalid class.' }, { status: 400, headers: NO_STORE });
+  }
+
+  await ensureSeeded();
+  const ref = rosterRef();
+  const db = getAdminDb();
+
+  const result = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const map = (snap.data() as RosterMap | undefined) ?? {};
+    const rec = map[id];
+    if (!rec) return { missing: true as const };
+    if (!(CLASS_ORDER[rec.grade] ?? []).includes(cls)) return { badClass: true as const };
+
+    const inClass = Object.entries(map).filter(([k, r]) => k !== id && r.grade === rec.grade && r.cls === cls);
+    if (inClass.some(([, r]) => r.name.trim().toLowerCase() === rec.name.trim().toLowerCase())) {
+      return { duplicate: true as const };
+    }
+
+    const leftCount = inClass.filter(([, r]) => r.col === 'L').length;
+    const rightCount = inClass.filter(([, r]) => r.col === 'R').length;
+    const col: 'L' | 'R' = leftCount <= rightCount ? 'L' : 'R';
+    const order = inClass.filter(([, r]) => r.col === col).reduce((m, [, r]) => Math.max(m, r.order), -1) + 1;
+
+    tx.set(ref, { [id]: { cls, col, order } }, { merge: true });
+    return { ok: true as const, col };
+  });
+
+  if ('missing' in result) return NextResponse.json({ error: 'Student not found.' }, { status: 404, headers: NO_STORE });
+  if ('badClass' in result) return NextResponse.json({ error: 'Invalid class.' }, { status: 400, headers: NO_STORE });
+  if ('duplicate' in result) return NextResponse.json({ error: 'Duplicate name.', duplicate: true }, { status: 409, headers: NO_STORE });
+
+  console.log(`[roster][POST] assign ${id} -> ${cls}/${result.col}`);
+  return NextResponse.json({ success: true }, { headers: NO_STORE });
 }
 
 async function handleRename(body: { id?: unknown; name?: unknown; note?: unknown }) {
