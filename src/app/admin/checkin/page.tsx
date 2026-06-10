@@ -624,7 +624,7 @@ function CheckInView({
       {!hasRoster ? (
         <p className="py-12 text-center text-sm text-slate-500">No roster yet for {selectedGrade} grade.</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
           {classes.map((c) => {
             const matches = (name: string) => !searchLower || name.toLowerCase().includes(searchLower);
             const leftItems = c.left.filter((s) => matches(s.name));
