@@ -706,30 +706,42 @@ function SaturdayBanner({
         <span className="text-base font-bold text-amber-800">Unassigned · Saturday only</span>
         <span className="text-sm font-semibold text-amber-700">{count.done} / {count.total}</span>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {students.map((s) => (
-          <div key={s.id} className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-3 py-1.5">
-            {mode === 'checkin' && (
-              <button onClick={() => onToggle?.(s.id)} aria-pressed={!!checked[s.id]} aria-label={`Check in ${s.name}`} className="flex items-center">
-                <CheckCircle done={!!checked[s.id]} />
+      <div className="mt-3 space-y-1">
+        {students.map((s) => {
+          const done = !!checked[s.id];
+          if (mode === 'checkin') {
+            return (
+              <button
+                key={s.id}
+                onClick={() => onToggle?.(s.id)}
+                aria-pressed={done}
+                aria-label={`Check in ${s.name}`}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${done ? '' : 'hover:bg-amber-100/60'}`}
+                style={done ? { backgroundColor: 'rgba(29, 158, 117, 0.5)' } : undefined}
+              >
+                <CheckCircle done={done} />
+                <span className="text-sm text-slate-800">{s.name}</span>
+                <SatBadge />
               </button>
-            )}
-            <span className="text-sm text-slate-800">{s.name}</span>
-            <SatBadge />
-            {mode === 'edit' && (
+            );
+          }
+          return (
+            <div key={s.id} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5">
+              <span className="text-sm text-slate-800">{s.name}</span>
+              <SatBadge />
               <select
                 value=""
                 onChange={(e) => { if (e.target.value) onAssign?.(s.id, e.target.value); }}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
+                className="ml-auto rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
               >
                 <option value="" disabled>Assign to…</option>
                 {(assignClasses ?? []).map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
