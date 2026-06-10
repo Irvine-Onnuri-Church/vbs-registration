@@ -18,7 +18,8 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-function formatDob(dob: string): string {
+function formatDob(dob: string | null | undefined): string {
+  if (!dob) return '';
   const [year, month, day] = dob.split('-');
   if (year && month && day) {
     return `${month}/${day}/${year}`;
@@ -76,7 +77,8 @@ function downloadCSV(rows: { reg: Registration; child: Child }[], isAppletree = 
     ? ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies/ Medical', 'Friend', 'Emergency Contact', 'Emergency Phone', 'Photo Consent']
     : ['Date', 'Grade', 'Child Name', 'T-Shirt', 'DOB', 'Gender', 'Parent Name', 'Mobile', 'Email', 'Allergies/ Medical', 'Friend', 'Phase', 'Status', 'Price', 'Emergency Contact', 'Emergency Phone', 'Photo Consent', 'Total'];
 
-  const formatDobCSV = (dob: string) => {
+  const formatDobCSV = (dob: string | null | undefined) => {
+    if (!dob) return '';
     const [year, month, day] = dob.split('-');
     return year && month && day ? `${month}-${day}-${year}` : dob;
   };

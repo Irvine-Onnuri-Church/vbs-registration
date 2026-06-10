@@ -13,7 +13,8 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-function formatDob(dob: string): string {
+function formatDob(dob: string | null | undefined): string {
+  if (!dob) return '';
   const [year, month, day] = dob.split('-');
   if (year && month && day) {
     return `${month}/${day}/${year}`;
