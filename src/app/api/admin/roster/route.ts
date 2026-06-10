@@ -8,6 +8,7 @@ import { getAdminDb } from '@/lib/firebase';
 import {
   buildSeedMap,
   CLASS_ORDER,
+  colForGender,
   GRADE_ORDER,
   STUDENT_ID_RE,
   type Grade,
@@ -94,12 +95,13 @@ export async function POST(request: Request) {
   }
 }
 
-async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown; note?: unknown; saturdayOnly?: unknown; unassigned?: unknown }) {
+async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown; note?: unknown; saturdayOnly?: unknown; unassigned?: unknown; gender?: unknown }) {
   const grade = body.grade as Grade;
   const cls = typeof body.cls === 'string' ? body.cls : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, MAX_NOTE) : '';
   const saturdayOnly = body.saturdayOnly === true;
+  const gender: 'M' | 'F' | undefined = body.gender === 'M' || body.gender === 'F' ? body.gender : undefined;
   // An "unassigned" student has no class and lives in the banner until assigned.
   // It may or may not be Saturday-only (saturdayOnly controls the SAT badge).
   const wantUnassigned = body.unassigned === true || (saturdayOnly && !cls);
@@ -139,6 +141,10 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
     if (wantUnassigned) {
       col = 'L'; // column is irrelevant for the banner; keep a stable value
       order = pool.reduce((m, r) => Math.max(m, r.order), -1) + 1;
+    } else if (gender) {
+      // Male → left column, female → right column.
+      col = colForGender(gender);
+      order = pool.filter((r) => r.col === col).reduce((m, r) => Math.max(m, r.order), -1) + 1;
     } else {
       const leftCount = pool.filter((r) => r.col === 'L').length;
       const rightCount = pool.filter((r) => r.col === 'R').length;
@@ -155,6 +161,7 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
       name,
       note,
       ...(saturdayOnly ? { saturdayOnly: true } : {}),
+      ...(gender ? { gender } : {}),
     };
     tx.set(ref, { [id]: student }, { merge: true });
     return { id, student };
@@ -200,9 +207,14 @@ async function handleAssign(body: { id?: unknown; cls?: unknown }) {
       return { duplicate: true as const };
     }
 
-    const leftCount = inClass.filter(([, r]) => r.col === 'L').length;
-    const rightCount = inClass.filter(([, r]) => r.col === 'R').length;
-    const col: 'L' | 'R' = leftCount <= rightCount ? 'L' : 'R';
+    let col: 'L' | 'R';
+    if (rec.gender) {
+      col = colForGender(rec.gender); // male → left, female → right
+    } else {
+      const leftCount = inClass.filter(([, r]) => r.col === 'L').length;
+      const rightCount = inClass.filter(([, r]) => r.col === 'R').length;
+      col = leftCount <= rightCount ? 'L' : 'R';
+    }
     const order = inClass.filter(([, r]) => r.col === col).reduce((m, [, r]) => Math.max(m, r.order), -1) + 1;
 
     tx.set(ref, { [id]: { cls, col, order } }, { merge: true });

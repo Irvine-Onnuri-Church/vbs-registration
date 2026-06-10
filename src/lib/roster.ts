@@ -76,6 +76,7 @@ export const CLASS_ORDER: Record<Grade, string[]> = Object.fromEntries(
 export type Col = 'L' | 'R';
 // `cls === ''` means an unassigned Saturday-only student (lives only in the banner).
 // `saturdayOnly` stays true even after assignment so the SAT badge persists.
+export type Gender = 'M' | 'F';
 export type StudentRecord = {
   grade: Grade;
   cls: string;
@@ -84,8 +85,14 @@ export type StudentRecord = {
   name: string;
   note: string;
   saturdayOnly?: boolean;
+  gender?: Gender;
 };
 export type RosterMap = Record<string, StudentRecord>;
+
+// Male students go in the left column, female in the right.
+export function colForGender(gender: Gender): Col {
+  return gender === 'F' ? 'R' : 'L';
+}
 
 // Deterministic id for an original (seeded) student. Format is identical to the
 // OLD check-in key `grade|class|side|index`, so existing check-in data — which is

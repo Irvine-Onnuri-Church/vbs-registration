@@ -8,6 +8,7 @@ import {
   CLASS_ORDER,
   GRADE_COLORS,
   GRADE_ORDER,
+  type Gender,
   type Grade,
   type RosterMap,
 } from '@/lib/roster';
@@ -278,7 +279,7 @@ export default function CheckinPage() {
 
   // ─── Roster edit handlers ─────────────────────────────────────────────────
   // Returns 'ok' | 'dup' | 'err'. Persists to Firestore, then refetches.
-  async function addStudent(grade: Grade, cls: string, name: string, note = ''): Promise<'ok' | 'dup' | 'err'> {
+  async function addStudent(grade: Grade, cls: string, name: string, note = '', gender?: Gender): Promise<'ok' | 'dup' | 'err'> {
     const trimmed = name.trim();
     if (!trimmed) return 'err';
     editBusyRef.current = true;
@@ -288,7 +289,7 @@ export default function CheckinPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ op: 'add', grade, cls, name: trimmed, note }),
+        body: JSON.stringify({ op: 'add', grade, cls, name: trimmed, note, ...(gender ? { gender } : {}) }),
       });
       if (res.status === 409) return 'dup';
       if (!res.ok) return 'err';
@@ -302,7 +303,7 @@ export default function CheckinPage() {
   }
 
   // Create an unassigned student (lives in the banner). saturdayOnly toggles the SAT badge.
-  async function addUnassignedStudent(grade: Grade, name: string, note = '', saturdayOnly = false): Promise<'ok' | 'dup' | 'err'> {
+  async function addUnassignedStudent(grade: Grade, name: string, note = '', saturdayOnly = false, gender?: Gender): Promise<'ok' | 'dup' | 'err'> {
     const trimmed = name.trim();
     if (!trimmed) return 'err';
     editBusyRef.current = true;
@@ -312,7 +313,7 @@ export default function CheckinPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ op: 'add', grade, name: trimmed, note, saturdayOnly, unassigned: true }),
+        body: JSON.stringify({ op: 'add', grade, name: trimmed, note, saturdayOnly, unassigned: true, ...(gender ? { gender } : {}) }),
       });
       if (res.status === 409) return 'dup';
       if (!res.ok) return 'err';
@@ -776,17 +777,18 @@ function EditView({
   bannerStudents: Student[];
   bannerCount: { done: number; total: number };
   checked: Record<string, boolean>;
-  onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
-  onAddUnassigned: (grade: Grade, name: string, note?: string, saturdayOnly?: boolean) => Promise<'ok' | 'dup' | 'err'>;
+  onAdd: (grade: Grade, cls: string, name: string, note?: string, gender?: Gender) => Promise<'ok' | 'dup' | 'err'>;
+  onAddUnassigned: (grade: Grade, name: string, note?: string, saturdayOnly?: boolean, gender?: Gender) => Promise<'ok' | 'dup' | 'err'>;
   onAssign: (id: string, cls: string) => Promise<'ok' | 'dup' | 'err'>;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
 }) {
-  const [qaGrade, setQaGrade] = useState<Grade>(grade);
-  const [qaClass, setQaClass] = useState<string>(CLASS_ORDER[grade][0]);
-  const [qaName, setQaName]   = useState('');
-  const [qaNote, setQaNote]   = useState('');
-  const [qaMsg, setQaMsg]     = useState<{ type: 'ok' | 'warn'; text: string } | null>(null);
+  const [qaGrade, setQaGrade]   = useState<Grade>(grade);
+  const [qaClass, setQaClass]   = useState<string>(CLASS_ORDER[grade][0]);
+  const [qaGender, setQaGender] = useState<Gender>('M');
+  const [qaName, setQaName]     = useState('');
+  const [qaNote, setQaNote]     = useState('');
+  const [qaMsg, setQaMsg]       = useState<{ type: 'ok' | 'warn'; text: string } | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   // Follow the active grade tab.
@@ -807,8 +809,8 @@ function EditView({
         ? `${qaGrade} unassigned`
         : qaClass;
     const result = isUnassigned
-      ? await onAddUnassigned(qaGrade, name, qaNote.trim(), isSat)
-      : await onAdd(qaGrade, qaClass, name, qaNote.trim());
+      ? await onAddUnassigned(qaGrade, name, qaNote.trim(), isSat, qaGender)
+      : await onAdd(qaGrade, qaClass, name, qaNote.trim(), qaGender);
     if (result === 'dup') {
       setQaMsg({ type: 'warn', text: `"${name}" is already in ${where}.` });
       return;
@@ -834,7 +836,7 @@ function EditView({
       {/* Quick-add bar */}
       <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <p className="mb-3 text-sm font-semibold text-slate-900">Add a student</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <select
             value={qaGrade}
             onChange={(e) => {
@@ -860,6 +862,15 @@ function EditView({
             ))}
             <option value={UNASSIGNED_SAT}>Unassigned — Saturday only (SAT)</option>
             <option value={UNASSIGNED_PLAIN}>Unassigned — no class</option>
+          </select>
+          <select
+            value={qaGender}
+            onChange={(e) => setQaGender(e.target.value as Gender)}
+            className={SELECT_CLASS}
+            style={SELECT_STYLE}
+          >
+            <option value="M">Male (left)</option>
+            <option value="F">Female (right)</option>
           </select>
         </div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -910,7 +921,8 @@ function EditView({
             grade={grade}
             className={c.className}
             gradeColor={gradeColor}
-            students={[...c.left, ...c.right]}
+            left={c.left}
+            right={c.right}
             onAdd={onAdd}
             onRename={onRename}
             onRemove={onRemove}
@@ -925,7 +937,8 @@ function EditClassCard({
   grade,
   className,
   gradeColor,
-  students,
+  left,
+  right,
   onAdd,
   onRename,
   onRemove,
@@ -933,27 +946,28 @@ function EditClassCard({
   grade: Grade;
   className: string;
   gradeColor: string;
-  students: Student[];
-  onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  left: Student[];
+  right: Student[];
+  onAdd: (grade: Grade, cls: string, name: string, note?: string, gender?: Gender) => Promise<'ok' | 'dup' | 'err'>;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
 }) {
-  const [draftRows, setDraftRows] = useState<number[]>([]);
-  const [cardMsg, setCardMsg]     = useState('');
+  const [drafts, setDrafts]   = useState<{ key: number; side: 'L' | 'R' }[]>([]);
+  const [cardMsg, setCardMsg] = useState('');
   const counterRef = useRef(0);
 
-  function addDraftRow() {
+  function addDraftRow(side: 'L' | 'R') {
     setCardMsg('');
-    setDraftRows((rows) => [...rows, counterRef.current++]);
+    setDrafts((d) => [...d, { key: counterRef.current++, side }]);
   }
 
-  async function commitDraft(key: number, name: string) {
+  async function commitDraft(key: number, side: 'L' | 'R', name: string) {
     const trimmed = name.trim();
     if (!trimmed) {
-      setDraftRows((rows) => rows.filter((r) => r !== key));
+      setDrafts((d) => d.filter((r) => r.key !== key));
       return;
     }
-    const result = await onAdd(grade, className, trimmed);
+    const result = await onAdd(grade, className, trimmed, undefined, side === 'L' ? 'M' : 'F');
     if (result === 'dup') {
       setCardMsg(`"${trimmed}" is already in ${className}.`);
       return; // keep the row so they can fix it
@@ -962,34 +976,44 @@ function EditClassCard({
       setCardMsg('Could not add — try again.');
       return;
     }
-    setDraftRows((rows) => rows.filter((r) => r !== key));
+    setDrafts((d) => d.filter((r) => r.key !== key));
   }
+
+  // One column of students (males on the left, females on the right).
+  const renderColumn = (items: Student[], side: 'L' | 'R', label: string) => (
+    <div className="flex-1 space-y-1.5 p-3">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      {items.map((s) => (
+        <EditStudentRow key={s.id} student={s} onRename={onRename} onRemove={onRemove} />
+      ))}
+      {drafts.filter((d) => d.side === side).map((d) => (
+        <DraftStudentRow
+          key={`draft-${d.key}`}
+          onCommit={(name) => commitDraft(d.key, side, name)}
+          onCancel={() => setDrafts((rows) => rows.filter((r) => r.key !== d.key))}
+        />
+      ))}
+      <button
+        onClick={() => addDraftRow(side)}
+        className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+      >
+        + Add {side === 'L' ? 'male' : 'female'}
+      </button>
+    </div>
+  );
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `2px solid ${gradeColor}` }}>
         <span className="text-base font-bold text-slate-900">{className}</span>
-        <span className="text-sm font-medium text-slate-500">{students.length}</span>
+        <span className="text-sm font-medium text-slate-500">{left.length + right.length}</span>
       </div>
-      <div className="space-y-1.5 p-3">
-        {students.map((s) => (
-          <EditStudentRow key={s.id} student={s} onRename={onRename} onRemove={onRemove} />
-        ))}
-        {draftRows.map((key) => (
-          <DraftStudentRow
-            key={`draft-${key}`}
-            onCommit={(name) => commitDraft(key, name)}
-            onCancel={() => setDraftRows((rows) => rows.filter((r) => r !== key))}
-          />
-        ))}
-        {cardMsg && <p className="px-1 text-xs font-medium text-red-600">{cardMsg}</p>}
-        <button
-          onClick={addDraftRow}
-          className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-        >
-          + Add student
-        </button>
+      <div className="flex">
+        {renderColumn(left, 'L', 'Male')}
+        <div className="w-px self-stretch bg-slate-200" />
+        {renderColumn(right, 'R', 'Female')}
       </div>
+      {cardMsg && <p className="px-4 pb-3 text-xs font-medium text-red-600">{cardMsg}</p>}
     </div>
   );
 }
