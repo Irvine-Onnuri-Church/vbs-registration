@@ -14,7 +14,7 @@ export default function Navbar() {
     checkAdmin();
 
     function checkAdmin() {
-      fetch('/api/admin/auth')
+      fetch('/api/admin/auth', { cache: 'no-store', credentials: 'same-origin' })
         .then((res) => setIsAdmin(res.ok))
         .catch(() => setIsAdmin(false));
     }
