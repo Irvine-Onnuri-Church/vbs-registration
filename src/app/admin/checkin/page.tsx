@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
 import {
@@ -14,6 +14,19 @@ import {
 
 const STORAGE_KEY = 'vbs-checkin-v1';
 const CHECKED_GREEN = '#1D9E75';
+
+// Native <select> arrows ignore padding and sit at a browser-fixed offset. Hide
+// the native arrow and draw our own chevron at the same 0.75rem margin as the
+// left text padding, so the arrow's margins are consistent on both sides.
+const SELECT_CLASS =
+  'w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-3 pr-9 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200';
+const SELECT_STYLE: CSSProperties = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 0.75rem center',
+  backgroundSize: '1rem',
+};
 
 // Perceived-luminance pick: dark text on light fills (K, 3rd), white on the rest.
 function textColorFor(hex: string): string {
@@ -636,7 +649,8 @@ function EditView({
               setQaGrade(g);
               setQaClass(CLASS_ORDER[g][0]);
             }}
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+            className={SELECT_CLASS}
+            style={SELECT_STYLE}
           >
             {GRADE_ORDER.map((g) => (
               <option key={g} value={g}>{g} grade</option>
@@ -645,7 +659,8 @@ function EditView({
           <select
             value={qaClass}
             onChange={(e) => setQaClass(e.target.value)}
-            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+            className={SELECT_CLASS}
+            style={SELECT_STYLE}
           >
             {(CLASS_ORDER[qaGrade] ?? []).map((cls) => (
               <option key={cls} value={cls}>{cls}</option>
