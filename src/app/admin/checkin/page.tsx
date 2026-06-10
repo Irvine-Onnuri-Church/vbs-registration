@@ -403,6 +403,13 @@ export default function CheckinPage() {
   const gradeClasses = grouped[selectedGrade] ?? [];
   const gradeColor = GRADE_COLORS[selectedGrade];
 
+  const bannerStudents = useMemo(() => bannerStudentsFor(rosterMap, selectedGrade), [rosterMap, selectedGrade]);
+  const bannerCount = useMemo(
+    () => ({ done: bannerStudents.filter((s) => checked[s.id]).length, total: bannerStudents.length }),
+    [bannerStudents, checked],
+  );
+
+  // Grade total includes both class students and unassigned (banner) students.
   const gradeCount = useMemo(() => {
     let total = 0;
     let done = 0;
@@ -412,16 +419,14 @@ export default function CheckinPage() {
         if (checked[s.id]) done += 1;
       });
     });
+    bannerStudents.forEach((s) => {
+      total += 1;
+      if (checked[s.id]) done += 1;
+    });
     return { done, total };
-  }, [gradeClasses, checked]);
+  }, [gradeClasses, bannerStudents, checked]);
 
   const gradeTotal = gradeCount.total;
-
-  const bannerStudents = useMemo(() => bannerStudentsFor(rosterMap, selectedGrade), [rosterMap, selectedGrade]);
-  const bannerCount = useMemo(
-    () => ({ done: bannerStudents.filter((s) => checked[s.id]).length, total: bannerStudents.length }),
-    [bannerStudents, checked],
-  );
 
   // ─── Auth screens ─────────────────────────────────────────────────────────
 
