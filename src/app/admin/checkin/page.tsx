@@ -913,8 +913,8 @@ function EditView({
         onAssign={handleAssign}
       />
 
-      {/* Class cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1rem' }}>
+      {/* Class cards — wider so both gender columns fit */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1rem' }}>
         {classes.map((c) => (
           <EditClassCard
             key={c.className}
@@ -981,7 +981,7 @@ function EditClassCard({
 
   // One column of students (males on the left, females on the right).
   const renderColumn = (items: Student[], side: 'L' | 'R', label: string) => (
-    <div className="flex-1 space-y-1.5 p-3">
+    <div className="min-w-0 flex-1 space-y-1.5 p-2.5">
       <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
       {items.map((s) => (
         <EditStudentRow key={s.id} student={s} onRename={onRename} onRemove={onRemove} />
@@ -1039,19 +1039,19 @@ function EditStudentRow({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        className="w-full min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
       {student.sat && <SatBadge />}
       <button
         onClick={() => onRemove(student.id)}
         aria-label={`Remove ${student.name}`}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
       >
         ×
       </button>
@@ -1066,7 +1066,7 @@ function DraftStudentRow({ onCommit, onCancel }: { onCommit: (name: string) => v
   useEffect(() => { ref.current?.focus(); }, []);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <input
         ref={ref}
         value={value}
@@ -1076,13 +1076,13 @@ function DraftStudentRow({ onCommit, onCancel }: { onCommit: (name: string) => v
           if (e.key === 'Enter') onCommit(value);
           if (e.key === 'Escape') onCancel();
         }}
-        placeholder="New student name"
-        className="flex-1 rounded-lg border border-sky-300 bg-sky-50/40 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        placeholder="New name"
+        className="w-full min-w-0 flex-1 rounded-lg border border-sky-300 bg-sky-50/40 px-2 py-1.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
       <button
         onClick={onCancel}
         aria-label="Cancel new student"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:bg-slate-50"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:bg-slate-50"
       >
         ×
       </button>
