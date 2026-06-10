@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
 
@@ -97,6 +97,10 @@ export default function CheckinPage() {
   const [search, setSearch]               = useState('');
   const [checked, setChecked]             = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated]           = useState(false);
+  const [syncError, setSyncError]         = useState('');
+
+  // Keys with an in-flight server write — preserved when reconciling polled server state.
+  const pendingRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     checkSession();
@@ -111,7 +115,7 @@ export default function CheckinPage() {
     }
   }, []);
 
-  // Load persisted check-in state.
+  // Instant paint from the local cache before the server responds.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -122,7 +126,7 @@ export default function CheckinPage() {
     setHydrated(true);
   }, []);
 
-  // Persist on every change (after initial hydration).
+  // Mirror state to a local cache so a refresh paints instantly (offline-friendly).
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -131,6 +135,45 @@ export default function CheckinPage() {
       /* ignore quota errors */
     }
   }, [checked, hydrated]);
+
+  // Firestore is the source of truth: load on open, then poll + refetch on focus
+  // so check-ins from other stations show up here.
+  useEffect(() => {
+    if (!authenticated) return;
+
+    let cancelled = false;
+
+    async function loadServerState() {
+      try {
+        const res = await fetch('/api/admin/roster-checkin');
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const server: Record<string, boolean> = data.checked || {};
+        setChecked((prev) => {
+          const merged = { ...server };
+          // Don't let a poll overwrite a toggle that's still being saved.
+          pendingRef.current.forEach((k) => {
+            if (prev[k]) merged[k] = true;
+            else delete merged[k];
+          });
+          return merged;
+        });
+      } catch {
+        /* keep showing cached state on network errors */
+      }
+    }
+
+    loadServerState();
+    const interval = setInterval(loadServerState, 7000);
+    const onFocus = () => loadServerState();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [authenticated]);
 
   async function handleLogin(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -151,13 +194,41 @@ export default function CheckinPage() {
     setAuthLoading(false);
   }
 
-  function toggle(key: string) {
+  async function toggle(key: string) {
+    const desired = !checked[key];
+
+    // Optimistic update — feels instant; reconciled with the server below.
+    pendingRef.current.add(key);
+    setSyncError('');
     setChecked((prev) => {
       const next = { ...prev };
-      if (next[key]) delete next[key];
-      else next[key] = true;
+      if (desired) next[key] = true;
+      else delete next[key];
       return next;
     });
+
+    try {
+      const res = await fetch('/api/admin/roster-checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, checkedIn: desired }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Save failed');
+      }
+    } catch {
+      // Revert on failure so the UI never shows an unsaved check-in.
+      setChecked((prev) => {
+        const next = { ...prev };
+        if (desired) delete next[key];
+        else next[key] = true;
+        return next;
+      });
+      setSyncError('Could not save check-in — check your connection and try again.');
+    } finally {
+      pendingRef.current.delete(key);
+    }
   }
 
   const gradeColor = GRADE_COLORS[selectedGrade];
@@ -276,6 +347,9 @@ export default function CheckinPage() {
         <span className="text-base font-medium text-slate-600">
           {gradeCount.done} / {gradeCount.total} checked in
         </span>
+        {syncError && (
+          <span className="ml-auto text-sm font-medium text-red-600">{syncError}</span>
+        )}
       </div>
 
       {/* Search */}
