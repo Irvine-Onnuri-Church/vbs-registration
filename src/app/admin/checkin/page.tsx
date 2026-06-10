@@ -3,69 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EVENT_INFO } from '@/lib/constants';
-
-// ─── Data ─────────────────────────────────────────────────────────────────
-
-const GRADE_ORDER = ['K', '1st', '2nd', '3rd', '4th', '5th', '6th'] as const;
-type Grade = (typeof GRADE_ORDER)[number];
-
-const GRADE_COLORS: Record<Grade, string> = {
-  K: '#74C3DD',
-  '1st': '#EE1C24',
-  '2nd': '#F0915A',
-  '3rd': '#F4CB3C',
-  '4th': '#19A64E',
-  '5th': '#4C50DF',
-  '6th': '#8E2C6C',
-};
-
-type ClassRoster = { left: string[]; right: string[] };
-type GradeRoster = Record<string, ClassRoster>;
-
-const ROSTER: Record<Grade, GradeRoster> = {
-  K: {
-    K1: { left: ['Ashet Oh', 'Billy Thompson', 'Earth Kim', 'Ezra Shim', 'Jude Jung', 'Paxton Yoon'], right: ['Ellie Park', 'Evelyn Lee', 'Jay Lee', 'Joelle Wang'] },
-    K2: { left: ['Eric Cho', 'Ethan Park', 'Hajun Sa', 'Joshua Hong', 'Yijun Kim'], right: ['Alisa Choi', 'Melody Han', 'Taelin Kim', 'Taylor Kim', 'Himavarsha Kumar', 'Lea Neumann'] },
-    K3: { left: ['Aiden Oh', 'Benjamin Jung', 'Ethan Kim', 'Gio Kim', 'Henry Cho', 'Nathan Lee'], right: ['Elena Park', 'Olivia Min', 'Stella Park', 'Yuha Hwang'] },
-    K4: { left: ['Gio Kim', 'Robin Song', 'WooJoo Kim'], right: ['Ina Youn', 'Jayla Kim', 'Jisoo Park', 'Leah Seo', 'Seoyoo Lee', 'Suji Han', 'Yuna Kim (05/09/20)'] },
-    K5: { left: ['Arthur Chang', 'Inyu Oh', 'Jiho Han', 'Jooho Cha', 'Mason Yoon'], right: ['Byul Kim', 'Joo-Ah Shin', 'Layla Shin', 'Rei Baik', 'Yuna Kim (04/28/20)'] },
-    K6: { left: ['Joshua Ock', 'Ryden Chiou', 'Seungmin Ahn', 'Yunu Cho', 'Aryan Patel'], right: ['Dayoon Ko', 'Heejoo Yang', 'Isla Yoon', 'Junie Whang', 'Sofia Kim'] },
-    K7: { left: ['Asher Kim', 'Gio Park', 'Ian Lee', 'Jordan Rough'], right: ['Eliana Kim', 'Erin Kim', 'Gianna Yoo', 'Hyenah Song', 'Noelle Choi'] },
-  },
-  '1st': {
-    '1A': { left: ['Aiden Park', 'Gio Lee', 'Brent Carballo', 'Sky Jung', 'Seogeun Lee'], right: ['Leah He', 'Elise Kim', 'Chloe Liang', 'Ria Choi'] },
-    '1B': { left: ['Noah Baek', 'Joshua Kim', 'Jacob Hong', 'Leo Jeong', 'Roy Chang'], right: ['Shanvika Karumujji', 'Olivia Chang', 'Emmy Neumann'] },
-    '1C': { left: ['Akshiv Gupta', 'Sebastian Lee', 'Daniel Park', 'Sean Kim'], right: ['Allison Kwon', 'Hailey Kim', 'Joy Kim', 'Faith Ha'] },
-    '1D': { left: ['Ethan Chang', 'Yohan Jang', 'Jacob Kim', 'Daniel Lee', 'Ian Choi'], right: ['Olivia Pai', 'Everlyn Oh', 'Ellis Kim'] },
-    '1E': { left: ['Aisultan Ural', 'Benjamin Serpa', 'Heewon Ku', 'Ethan Lee', 'Eden Moon'], right: ['Heidi Han', 'Karley Fung', 'Jayleen Hur'] },
-  },
-  '2nd': {
-    '2A': { left: ['Cayden Won', 'Simon Park', 'Christian Oh', 'Nathaniel Ha'], right: ['Audrey Nam', 'Eleanor Yune', 'Claire Chang', 'Emma Yang', 'Yejee Bang'] },
-    '2B': { left: ['Charlie Whang', 'Aiden Kim', 'Matthew Kim'], right: ['Paige Chong', 'Calla Rough', 'Maxine Koh-Parsons', 'Yuha Kim', 'Jeongyoon Moon', 'Gian Kim'] },
-    '2C': { left: ['Ellis Baik', 'Dylan Lee', 'Brian Song'], right: ['Dana Kim', 'Corrie Whang', 'Alena Bueno', 'Lindsay Liew', 'Jaea Choi', 'Yullie Jung'] },
-  },
-  '3rd': {
-    '3A': { left: ['Liam Choi', 'Hageun Lee', 'Siwoo Yang', 'Jacob Choi'], right: ['Emma Medina', 'Seoyeong Lee', 'Soul Lee', 'Clover Jung', 'Rena Oh', 'Lily Park'] },
-    '3B': { left: ['Evan Hwang', 'Aabhash Patel', 'Elliott Chang'], right: ['Chelsea Mawji', 'Priscilla Ryu', 'Kaitlyn Kim', 'Adelynn Won', 'Soul Kim', 'Chloe Kwon'] },
-    '3C': { left: ['Luke Lim', 'Asher Eom', 'Jiun Lim'], right: ['Joy Kim', 'Jamie Lee', 'Olivia Park', 'Valentina Torres', 'Ellie Choi', 'Elisha Kim'] },
-  },
-  '4th': {
-    '4A': { left: ['Evan Yang', 'Aaron Yoo', 'Leon Jeong', 'Haejin Kim', 'Luke Kim'], right: ['Jane Richardson', 'Joy Kim', 'Janet Hur', 'Liann Kim'] },
-    '4B': { left: ['Daniel Kim', 'Clayton Choi', 'Shaun Kim', 'Roy Kim'], right: ['Charlotte Liang', 'Ashley Xiao', 'Ailyn Kim', 'Mackenzie Kim'] },
-    '4C': { left: ['Jeremy Liew', 'Darron Lee', 'Youngmin Park', 'Timothy Park'], right: ['Charlotte Mawji', 'Hayeon Cho', 'Jimin Park', 'Amy Kim'] },
-    '4D': { left: ['Daniel Lee', 'Joshua Park', 'Evan Baik', 'Logan Shin', 'Jonathan Ryu'], right: ['Jiyu Song', 'Terri Kim', 'Seoyoon Ko'] },
-    '4E': { left: ['Elias Kim', 'Ian Lee', 'Caleb Lee', 'Elliot Hong', 'Blake Carballo'], right: ['Isabel Choi', 'Kaylee Kim', 'Mina Kim'] },
-  },
-  '5th': {
-    '5A': { left: ['Nathan Jung', 'Siho Yang', 'Eugene Kim', 'Andy Song', 'Elijah Shin', 'Rihwan Kim', 'Daniel Kim', 'Jaeyul Ryu'], right: ['Eunhu Lee', 'Hara Jang', 'Charlotte Chiou'] },
-    '5B': { left: ['Emiliano Medina', 'Asher Oh', 'Jackson Fung', 'Harrison Lee', 'Jaden Hwang'], right: ['Sofia Torres', 'Yein Park', 'Faith Lee', 'Ellie Jung'] },
-    '5C': { left: ['Jackson Koh-Parsons', 'Jeonghun Yeom', 'Robin Kim', 'Samuel Moon', 'Nathan Choi', 'Jake Kang', 'Jonah Min'], right: ['Jenny Kim', 'Eliana Park', 'Celine Chang', 'Geo Kwak'] },
-  },
-  '6th': {
-    '6A': { left: ['Jayden Hur', 'Micah Chang', 'Ethan Eom', 'Jonah Min'], right: ['Kiwi Gupta', 'Audrey Han', 'Rachel Kahng', 'Euna Kim'] },
-    '6B': { left: ['Ethan Song', 'Heesoo Yang', 'James Kim', 'Noul Lee'], right: ['Yumin Kim', 'Seohee Cho', 'Jordan Lee'] },
-  },
-};
+import {
+  buildSeedMap,
+  CLASS_ORDER,
+  GRADE_COLORS,
+  GRADE_ORDER,
+  type Grade,
+  type RosterMap,
+} from '@/lib/roster';
 
 const STORAGE_KEY = 'vbs-checkin-v1';
 const CHECKED_GREEN = '#1D9E75';
@@ -79,9 +24,30 @@ function textColorFor(hex: string): string {
   return luminance >= 170 ? '#222' : '#fff';
 }
 
-// Stable per-student key (handles duplicate names across classes/columns).
-function studentKey(grade: Grade, className: string, side: 'L' | 'R', index: number): string {
-  return `${grade}|${className}|${side}|${index}`;
+// ─── Derived view model ─────────────────────────────────────────────────────
+
+type Student = { id: string; name: string; note: string };
+type GroupedClass = { className: string; left: Student[]; right: Student[] };
+
+// Group the flat roster map into ordered classes/columns for rendering.
+function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
+  const byGradeClass: Record<string, Record<string, Array<{ id: string; col: 'L' | 'R'; order: number; name: string; note: string }>>> = {};
+  for (const [id, r] of Object.entries(map)) {
+    ((byGradeClass[r.grade] ??= {})[r.cls] ??= []).push({ id, col: r.col, order: r.order, name: r.name, note: r.note });
+  }
+
+  const out: Record<string, GroupedClass[]> = {};
+  for (const grade of GRADE_ORDER) {
+    const classList = CLASS_ORDER[grade] ?? [];
+    out[grade] = classList.map((cls) => {
+      const arr = byGradeClass[grade]?.[cls] ?? [];
+      const toStudent = (s: { id: string; name: string; note: string }): Student => ({ id: s.id, name: s.name, note: s.note });
+      const left = arr.filter((s) => s.col === 'L').sort((a, b) => a.order - b.order).map(toStudent);
+      const right = arr.filter((s) => s.col === 'R').sort((a, b) => a.order - b.order).map(toStudent);
+      return { className: cls, left, right };
+    });
+  }
+  return out;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────
@@ -99,8 +65,14 @@ export default function CheckinPage() {
   const [hydrated, setHydrated]           = useState(false);
   const [syncError, setSyncError]         = useState('');
 
-  // Keys with an in-flight server write — preserved when reconciling polled server state.
+  // Dynamic roster — seeded for instant paint, replaced by the server GET.
+  const [rosterMap, setRosterMap] = useState<RosterMap>(() => buildSeedMap());
+  const [editMode, setEditMode]   = useState(false);
+
+  // Keys with an in-flight check-in write — preserved when reconciling polls.
   const pendingRef = useRef<Set<string>>(new Set());
+  // True while a roster add/rename/remove is in flight — pauses poll apply.
+  const editBusyRef = useRef(false);
 
   useEffect(() => {
     checkSession();
@@ -115,7 +87,7 @@ export default function CheckinPage() {
     }
   }, []);
 
-  // Instant paint from the local cache before the server responds.
+  // Instant paint of check-in state from the local cache.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -126,7 +98,7 @@ export default function CheckinPage() {
     setHydrated(true);
   }, []);
 
-  // Mirror state to a local cache so a refresh paints instantly (offline-friendly).
+  // Mirror check-in state to a local cache so a refresh paints instantly.
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -136,28 +108,20 @@ export default function CheckinPage() {
     }
   }, [checked, hydrated]);
 
-  // Firestore is the source of truth: load on open, then poll + refetch on focus
-  // so check-ins from other stations show up here.
+  // ─── Check-in store: load + poll + focus ──────────────────────────────────
   useEffect(() => {
     if (!authenticated) return;
-
     let cancelled = false;
 
-    async function loadServerState() {
+    async function loadCheckin() {
       try {
-        const res = await fetch('/api/admin/roster-checkin', {
-          cache: 'no-store',
-          credentials: 'same-origin',
-        });
-        // Only apply a successful, well-formed response — never overwrite live
-        // checkmarks with empty data from a 401/500/parse failure.
+        const res = await fetch('/api/admin/roster-checkin', { cache: 'no-store', credentials: 'same-origin' });
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (cancelled || !data || typeof data.checked !== 'object' || data.checked === null) return;
         const server: Record<string, boolean> = data.checked;
         setChecked((prev) => {
           const merged = { ...server };
-          // Don't let a poll overwrite a toggle that's still being saved.
           pendingRef.current.forEach((k) => {
             if (prev[k]) merged[k] = true;
             else delete merged[k];
@@ -165,20 +129,51 @@ export default function CheckinPage() {
           return merged;
         });
       } catch {
-        /* keep showing cached state on network errors */
+        /* keep cached state on errors */
       }
     }
 
-    loadServerState();
-    const interval = setInterval(loadServerState, 7000);
-    const onFocus = () => loadServerState();
-    window.addEventListener('focus', onFocus);
-
+    loadCheckin();
+    const interval = setInterval(loadCheckin, 7000);
+    window.addEventListener('focus', loadCheckin);
     return () => {
       cancelled = true;
       clearInterval(interval);
-      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('focus', loadCheckin);
     };
+  }, [authenticated]);
+
+  // ─── Roster store: load + poll + focus ────────────────────────────────────
+  // Defined in component scope so edit handlers can force an authoritative refetch.
+  async function loadRoster(force = false) {
+    if (!force && editBusyRef.current) return;
+    try {
+      const res = await fetch('/api/admin/roster', { cache: 'no-store', credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || typeof data.students !== 'object' || data.students === null) return;
+      if (!force && editBusyRef.current) return; // re-check after await
+      setRosterMap(data.students);
+    } catch {
+      /* keep current roster on errors */
+    }
+  }
+
+  useEffect(() => {
+    if (!authenticated) return;
+    let cancelled = false;
+    const tick = () => { if (!cancelled) loadRoster(false); };
+
+    tick();
+    const interval = setInterval(tick, 7000);
+    window.addEventListener('focus', tick);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', tick);
+    };
+    // loadRoster only touches stable refs/setters; safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated]);
 
   async function handleLogin(e: { preventDefault(): void }) {
@@ -198,21 +193,19 @@ export default function CheckinPage() {
     }
     setAuthenticated(true);
     setAuthLoading(false);
-    // Notify the Navbar so it re-checks auth and swaps to the admin links
-    // immediately (otherwise it stays on the public links until a refresh).
+    // Notify the Navbar so it swaps to the admin links immediately.
     window.dispatchEvent(new Event('admin-auth-changed'));
   }
 
-  async function toggle(key: string) {
-    const desired = !checked[key];
-
-    // Optimistic update — feels instant; reconciled with the server below.
-    pendingRef.current.add(key);
+  // ─── Check-in toggle (keyed by student id) ────────────────────────────────
+  async function toggle(id: string) {
+    const desired = !checked[id];
+    pendingRef.current.add(id);
     setSyncError('');
     setChecked((prev) => {
       const next = { ...prev };
-      if (desired) next[key] = true;
-      else delete next[key];
+      if (desired) next[id] = true;
+      else delete next[id];
       return next;
     });
 
@@ -222,46 +215,118 @@ export default function CheckinPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ key, checkedIn: desired }),
+        body: JSON.stringify({ key: id, checkedIn: desired }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Save failed (${res.status})`);
       }
     } catch {
-      // Revert on failure so the UI never shows an unsaved check-in.
       setChecked((prev) => {
         const next = { ...prev };
-        if (desired) delete next[key];
-        else next[key] = true;
+        if (desired) delete next[id];
+        else next[id] = true;
         return next;
       });
       setSyncError('Could not save check-in — check your connection and try again.');
     } finally {
-      pendingRef.current.delete(key);
+      pendingRef.current.delete(id);
     }
   }
 
-  const gradeColor = GRADE_COLORS[selectedGrade];
-  const classes = ROSTER[selectedGrade] ?? {};
-  const searchLower = search.trim().toLowerCase();
+  // ─── Roster edit handlers ─────────────────────────────────────────────────
+  // Returns 'ok' | 'dup' | 'err'. Persists to Firestore, then refetches.
+  async function addStudent(grade: Grade, cls: string, name: string, note = ''): Promise<'ok' | 'dup' | 'err'> {
+    const trimmed = name.trim();
+    if (!trimmed) return 'err';
+    editBusyRef.current = true;
+    try {
+      const res = await fetch('/api/admin/roster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ op: 'add', grade, cls, name: trimmed, note }),
+      });
+      if (res.status === 409) return 'dup';
+      if (!res.ok) return 'err';
+      return 'ok';
+    } catch {
+      return 'err';
+    } finally {
+      editBusyRef.current = false;
+      await loadRoster(true);
+    }
+  }
 
-  // Live grade-wide checked / total count (independent of search).
+  async function renameStudent(id: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    editBusyRef.current = true;
+    setRosterMap((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], name: trimmed } } : prev));
+    try {
+      await fetch('/api/admin/roster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ op: 'rename', id, name: trimmed }),
+      });
+    } catch {
+      /* refetch below restores authoritative state */
+    } finally {
+      editBusyRef.current = false;
+      await loadRoster(true);
+    }
+  }
+
+  async function removeStudent(id: string) {
+    editBusyRef.current = true;
+    setRosterMap((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setChecked((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    try {
+      await fetch('/api/admin/roster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ op: 'remove', id }),
+      });
+    } catch {
+      /* refetch below restores authoritative state */
+    } finally {
+      editBusyRef.current = false;
+      await loadRoster(true);
+    }
+  }
+
+  // ─── Derived ──────────────────────────────────────────────────────────────
+  const grouped = useMemo(() => groupRoster(rosterMap), [rosterMap]);
+  const gradeClasses = grouped[selectedGrade] ?? [];
+  const gradeColor = GRADE_COLORS[selectedGrade];
+
   const gradeCount = useMemo(() => {
     let total = 0;
     let done = 0;
-    Object.entries(classes).forEach(([className, roster]) => {
-      roster.left.forEach((_, i) => {
+    gradeClasses.forEach((c) => {
+      [...c.left, ...c.right].forEach((s) => {
         total += 1;
-        if (checked[studentKey(selectedGrade, className, 'L', i)]) done += 1;
-      });
-      roster.right.forEach((_, i) => {
-        total += 1;
-        if (checked[studentKey(selectedGrade, className, 'R', i)]) done += 1;
+        if (checked[s.id]) done += 1;
       });
     });
     return { done, total };
-  }, [classes, checked, selectedGrade]);
+  }, [gradeClasses, checked]);
+
+  const gradeTotal = gradeCount.total;
 
   // ─── Auth screens ─────────────────────────────────────────────────────────
 
@@ -313,19 +378,36 @@ export default function CheckinPage() {
     );
   }
 
-  // ─── Check-in ───────────────────────────────────────────────────────────────
-
-  const classEntries = Object.entries(classes);
-  const hasRoster = classEntries.length > 0;
+  // ─── Main ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="space-y-1">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Check-in</h1>
-        <p className="text-sm text-slate-500">
-          {EVENT_INFO.name} · {EVENT_INFO.subtitle} · {EVENT_INFO.dates}
-        </p>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Admin</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Check-in</h1>
+          {editMode ? (
+            <p className="text-sm text-slate-500">
+              <span className="font-semibold" style={{ color: gradeColor }}>{selectedGrade}</span>
+              {' · editing roster · '}{gradeTotal} student{gradeTotal === 1 ? '' : 's'}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500">
+              {EVENT_INFO.name} · {EVENT_INFO.subtitle} · {EVENT_INFO.dates}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setEditMode((v) => !v)}
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+            editMode
+              ? 'bg-slate-900 text-white hover:bg-slate-700'
+              : 'border border-slate-300 text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          {editMode ? 'Done editing' : 'Edit roster'}
+        </button>
       </div>
 
       {/* Grade tabs */}
@@ -350,81 +432,110 @@ export default function CheckinPage() {
         })}
       </div>
 
+      {editMode ? (
+        <EditView
+          grade={selectedGrade}
+          gradeColor={gradeColor}
+          classes={gradeClasses}
+          onAdd={addStudent}
+          onRename={renameStudent}
+          onRemove={removeStudent}
+        />
+      ) : (
+        <CheckInView
+          selectedGrade={selectedGrade}
+          gradeColor={gradeColor}
+          classes={gradeClasses}
+          count={gradeCount}
+          checked={checked}
+          onToggle={toggle}
+          search={search}
+          onSearch={setSearch}
+          syncError={syncError}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Check-in view ──────────────────────────────────────────────────────────
+
+function CheckInView({
+  selectedGrade,
+  gradeColor,
+  classes,
+  count,
+  checked,
+  onToggle,
+  search,
+  onSearch,
+  syncError,
+}: {
+  selectedGrade: Grade;
+  gradeColor: string;
+  classes: GroupedClass[];
+  count: { done: number; total: number };
+  checked: Record<string, boolean>;
+  onToggle: (id: string) => void;
+  search: string;
+  onSearch: (v: string) => void;
+  syncError: string;
+}) {
+  const searchLower = search.trim().toLowerCase();
+  const hasRoster = classes.length > 0;
+
+  return (
+    <>
       {/* Summary bar */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
         <span className="text-lg font-bold" style={{ color: gradeColor }}>
           {selectedGrade} Grade
         </span>
         <span className="text-base font-medium text-slate-600">
-          {gradeCount.done} / {gradeCount.total} checked in
+          {count.done} / {count.total} checked in
         </span>
-        {syncError && (
-          <span className="ml-auto text-sm font-medium text-red-600">{syncError}</span>
-        )}
+        {syncError && <span className="ml-auto text-sm font-medium text-red-600">{syncError}</span>}
       </div>
 
       {/* Search */}
       <input
         type="text"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => onSearch(e.target.value)}
         placeholder={`Search students in ${selectedGrade} grade…`}
         className="w-full rounded-2xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
 
-      {/* Classes */}
       {!hasRoster ? (
         <p className="py-12 text-center text-sm text-slate-500">No roster yet for {selectedGrade} grade.</p>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
-            gap: '1rem',
-          }}
-        >
-          {classEntries.map(([className, roster]) => {
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1rem' }}>
+          {classes.map((c) => {
             const matches = (name: string) => !searchLower || name.toLowerCase().includes(searchLower);
-
-            const leftItems = roster.left
-              .map((name, i) => ({ name, i, key: studentKey(selectedGrade, className, 'L', i) }))
-              .filter((s) => matches(s.name));
-            const rightItems = roster.right
-              .map((name, i) => ({ name, i, key: studentKey(selectedGrade, className, 'R', i) }))
-              .filter((s) => matches(s.name));
-
-            // Hide a class card entirely if the search excludes all of its students.
+            const leftItems = c.left.filter((s) => matches(s.name));
+            const rightItems = c.right.filter((s) => matches(s.name));
             if (searchLower && leftItems.length === 0 && rightItems.length === 0) return null;
 
-            const classTotal = roster.left.length + roster.right.length;
+            const classTotal = c.left.length + c.right.length;
             const classDone =
-              roster.left.filter((_, i) => checked[studentKey(selectedGrade, className, 'L', i)]).length +
-              roster.right.filter((_, i) => checked[studentKey(selectedGrade, className, 'R', i)]).length;
+              c.left.filter((s) => checked[s.id]).length + c.right.filter((s) => checked[s.id]).length;
 
             return (
-              <div key={className} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                {/* Card header */}
-                <div
-                  className="flex items-center justify-between px-4 py-3"
-                  style={{ borderBottom: `2px solid ${gradeColor}` }}
-                >
-                  <span className="text-base font-bold text-slate-900">{className}</span>
-                  <span className="text-sm font-medium text-slate-500">
-                    {classDone} / {classTotal}
-                  </span>
+              <div key={c.className} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `2px solid ${gradeColor}` }}>
+                  <span className="text-base font-bold text-slate-900">{c.className}</span>
+                  <span className="text-sm font-medium text-slate-500">{classDone} / {classTotal}</span>
                 </div>
-
-                {/* Card body: two columns + divider */}
                 <div className="flex">
                   <ul className="flex-1 space-y-0.5 p-3">
                     {leftItems.map((s) => (
-                      <StudentRow key={s.key} name={s.name} done={!!checked[s.key]} onToggle={() => toggle(s.key)} />
+                      <StudentRow key={s.id} student={s} done={!!checked[s.id]} onToggle={() => onToggle(s.id)} />
                     ))}
                   </ul>
                   <div className="w-px self-stretch bg-slate-200" />
                   <ul className="flex-1 space-y-0.5 p-3">
                     {rightItems.map((s) => (
-                      <StudentRow key={s.key} name={s.name} done={!!checked[s.key]} onToggle={() => toggle(s.key)} />
+                      <StudentRow key={s.id} student={s} done={!!checked[s.id]} onToggle={() => onToggle(s.id)} />
                     ))}
                   </ul>
                 </div>
@@ -433,13 +544,11 @@ export default function CheckinPage() {
           })}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-// ─── Student row ──────────────────────────────────────────────────────────
-
-function StudentRow({ name, done, onToggle }: { name: string; done: boolean; onToggle: () => void }) {
+function StudentRow({ student, done, onToggle }: { student: Student; done: boolean; onToggle: () => void }) {
   return (
     <li>
       <button
@@ -449,10 +558,7 @@ function StudentRow({ name, done, onToggle }: { name: string; done: boolean; onT
         style={done ? { backgroundColor: 'rgba(29, 158, 117, 0.5)' } : undefined}
       >
         {done ? (
-          <span
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: CHECKED_GREEN }}
-          >
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: CHECKED_GREEN }}>
             <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -460,8 +566,281 @@ function StudentRow({ name, done, onToggle }: { name: string; done: boolean; onT
         ) : (
           <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300" />
         )}
-        <span className="text-sm text-slate-800">{name}</span>
+        <span className="min-w-0">
+          <span className="block text-sm text-slate-800">{student.name}</span>
+          {student.note && <span className="block text-xs text-amber-600">{student.note}</span>}
+        </span>
       </button>
     </li>
+  );
+}
+
+// ─── Edit view ──────────────────────────────────────────────────────────────
+
+function EditView({
+  grade,
+  gradeColor,
+  classes,
+  onAdd,
+  onRename,
+  onRemove,
+}: {
+  grade: Grade;
+  gradeColor: string;
+  classes: GroupedClass[];
+  onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  onRename: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [qaGrade, setQaGrade] = useState<Grade>(grade);
+  const [qaClass, setQaClass] = useState<string>(CLASS_ORDER[grade][0]);
+  const [qaName, setQaName]   = useState('');
+  const [qaNote, setQaNote]   = useState('');
+  const [qaMsg, setQaMsg]     = useState<{ type: 'ok' | 'warn'; text: string } | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // Follow the active grade tab.
+  useEffect(() => {
+    setQaGrade(grade);
+    setQaClass(CLASS_ORDER[grade][0]);
+  }, [grade]);
+
+  async function submitQuickAdd() {
+    const name = qaName.trim();
+    if (!name) return;
+    const result = await onAdd(qaGrade, qaClass, name, qaNote.trim());
+    if (result === 'dup') {
+      setQaMsg({ type: 'warn', text: `"${name}" is already in ${qaClass}.` });
+      return;
+    }
+    if (result === 'err') {
+      setQaMsg({ type: 'warn', text: 'Could not add — try again.' });
+      return;
+    }
+    setQaMsg({ type: 'ok', text: `Added ${name} to ${qaClass} ✓` });
+    setQaName('');
+    setQaNote('');
+    nameRef.current?.focus();
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Quick-add bar */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <p className="mb-3 text-sm font-semibold text-slate-900">Add a student</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <select
+            value={qaGrade}
+            onChange={(e) => {
+              const g = e.target.value as Grade;
+              setQaGrade(g);
+              setQaClass(CLASS_ORDER[g][0]);
+            }}
+            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          >
+            {GRADE_ORDER.map((g) => (
+              <option key={g} value={g}>{g} grade</option>
+            ))}
+          </select>
+          <select
+            value={qaClass}
+            onChange={(e) => setQaClass(e.target.value)}
+            className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          >
+            {(CLASS_ORDER[qaGrade] ?? []).map((cls) => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+          <input
+            ref={nameRef}
+            value={qaName}
+            onChange={(e) => setQaName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(); } }}
+            placeholder="Student name"
+            className="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          />
+          <input
+            value={qaNote}
+            onChange={(e) => setQaNote(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(); } }}
+            placeholder="Note (allergy…) — optional"
+            className="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          />
+          <button
+            onClick={submitQuickAdd}
+            className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            Add
+          </button>
+        </div>
+        {qaMsg && (
+          <p className={`mt-3 text-sm font-medium ${qaMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+            {qaMsg.text}
+          </p>
+        )}
+      </div>
+
+      {/* Class cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1rem' }}>
+        {classes.map((c) => (
+          <EditClassCard
+            key={c.className}
+            grade={grade}
+            className={c.className}
+            gradeColor={gradeColor}
+            students={[...c.left, ...c.right]}
+            onAdd={onAdd}
+            onRename={onRename}
+            onRemove={onRemove}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EditClassCard({
+  grade,
+  className,
+  gradeColor,
+  students,
+  onAdd,
+  onRename,
+  onRemove,
+}: {
+  grade: Grade;
+  className: string;
+  gradeColor: string;
+  students: Student[];
+  onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  onRename: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [draftRows, setDraftRows] = useState<number[]>([]);
+  const [cardMsg, setCardMsg]     = useState('');
+  const counterRef = useRef(0);
+
+  function addDraftRow() {
+    setCardMsg('');
+    setDraftRows((rows) => [...rows, counterRef.current++]);
+  }
+
+  async function commitDraft(key: number, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setDraftRows((rows) => rows.filter((r) => r !== key));
+      return;
+    }
+    const result = await onAdd(grade, className, trimmed);
+    if (result === 'dup') {
+      setCardMsg(`"${trimmed}" is already in ${className}.`);
+      return; // keep the row so they can fix it
+    }
+    if (result === 'err') {
+      setCardMsg('Could not add — try again.');
+      return;
+    }
+    setDraftRows((rows) => rows.filter((r) => r !== key));
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `2px solid ${gradeColor}` }}>
+        <span className="text-base font-bold text-slate-900">{className}</span>
+        <span className="text-sm font-medium text-slate-500">{students.length}</span>
+      </div>
+      <div className="space-y-1.5 p-3">
+        {students.map((s) => (
+          <EditStudentRow key={s.id} student={s} onRename={onRename} onRemove={onRemove} />
+        ))}
+        {draftRows.map((key) => (
+          <DraftStudentRow
+            key={`draft-${key}`}
+            onCommit={(name) => commitDraft(key, name)}
+            onCancel={() => setDraftRows((rows) => rows.filter((r) => r !== key))}
+          />
+        ))}
+        {cardMsg && <p className="px-1 text-xs font-medium text-red-600">{cardMsg}</p>}
+        <button
+          onClick={addDraftRow}
+          className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+        >
+          + Add student
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EditStudentRow({
+  student,
+  onRename,
+  onRemove,
+}: {
+  student: Student;
+  onRename: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [draft, setDraft] = useState(student.name);
+
+  // Sync if the server value changes (e.g. an edit from another device).
+  useEffect(() => { setDraft(student.name); }, [student.name]);
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (!trimmed) { setDraft(student.name); return; }
+    if (trimmed !== student.name) onRename(student.id, trimmed);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+      />
+      <button
+        onClick={() => onRemove(student.id)}
+        aria-label={`Remove ${student.name}`}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function DraftStudentRow({ onCommit, onCancel }: { onCommit: (name: string) => void; onCancel: () => void }) {
+  const [value, setValue] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { ref.current?.focus(); }, []);
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={ref}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => onCommit(value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onCommit(value);
+          if (e.key === 'Escape') onCancel();
+        }}
+        placeholder="New student name"
+        className="flex-1 rounded-lg border border-sky-300 bg-sky-50/40 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+      />
+      <button
+        onClick={onCancel}
+        aria-label="Cancel new student"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-slate-400 transition hover:bg-slate-50"
+      >
+        ×
+      </button>
+    </div>
   );
 }

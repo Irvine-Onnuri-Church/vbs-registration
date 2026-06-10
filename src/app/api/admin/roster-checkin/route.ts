@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
 import { getAdminDb } from '@/lib/firebase';
+import { STUDENT_ID_RE } from '@/lib/roster';
 
 // Never cache: this endpoint must always reflect live Firestore state, and the
 // browser must never serve a stale (e.g. empty) GET response from its HTTP cache.
@@ -12,12 +13,9 @@ export const revalidate = 0;
 const NO_STORE = { 'Cache-Control': 'no-store, max-age=0' } as const;
 
 // Single Firestore document holding the shared roster check-in state.
-// Shape: { "<grade>|<class>|<L|R>|<index>": true, ... }  (absent field = not checked in)
+// Shape: { "<student id>": true, ... }  (absent field = not checked in)
 const COLLECTION = 'roster_checkin';
 const DOC_ID = 'state';
-
-// Matches the stable per-student key produced by the check-in page.
-const KEY_RE = /^(K|1st|2nd|3rd|4th|5th|6th)\|[A-Za-z0-9]+\|[LR]\|\d+$/;
 
 async function isAdmin(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -52,7 +50,7 @@ export async function POST(request: Request) {
 
   try {
     const { key, checkedIn } = await request.json();
-    if (typeof key !== 'string' || !KEY_RE.test(key)) {
+    if (typeof key !== 'string' || !STUDENT_ID_RE.test(key)) {
       return NextResponse.json({ error: 'Invalid student key.' }, { status: 400, headers: NO_STORE });
     }
 
