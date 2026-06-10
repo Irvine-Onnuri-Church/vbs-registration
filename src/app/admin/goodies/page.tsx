@@ -141,7 +141,7 @@ export default function CheckInPage() {
   const [registrations, setRegistrations]     = useState<Registration[]>([]);
   const [dataLoading, setDataLoading]         = useState(false);
   const [searchQuery, setSearchQuery]         = useState('');
-  const [filterMode, setFilterMode]           = useState<FilterMode>('all');
+  const [filterMode, setFilterMode]           = useState<FilterMode>('remaining');
   const [loadingCheckin, setLoadingCheckin]   = useState<string | null>(null);
 
   const [showStats, setShowStats]             = useState(true);
