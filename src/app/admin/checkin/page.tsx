@@ -145,10 +145,16 @@ export default function CheckinPage() {
 
     async function loadServerState() {
       try {
-        const res = await fetch('/api/admin/roster-checkin');
+        const res = await fetch('/api/admin/roster-checkin', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        // Only apply a successful, well-formed response — never overwrite live
+        // checkmarks with empty data from a 401/500/parse failure.
         if (!res.ok || cancelled) return;
         const data = await res.json();
-        const server: Record<string, boolean> = data.checked || {};
+        if (cancelled || !data || typeof data.checked !== 'object' || data.checked === null) return;
+        const server: Record<string, boolean> = data.checked;
         setChecked((prev) => {
           const merged = { ...server };
           // Don't let a poll overwrite a toggle that's still being saved.
@@ -211,11 +217,13 @@ export default function CheckinPage() {
       const res = await fetch('/api/admin/roster-checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
         body: JSON.stringify({ key, checkedIn: desired }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Save failed');
+        throw new Error(data.error || `Save failed (${res.status})`);
       }
     } catch {
       // Revert on failure so the UI never shows an unsaved check-in.
