@@ -100,9 +100,9 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, MAX_NOTE) : '';
   const saturdayOnly = body.saturdayOnly === true;
-  // A Saturday-only student created with no class is "unassigned" — it lives in
-  // the banner until an admin assigns it to a class.
-  const wantUnassigned = saturdayOnly && (body.unassigned === true || !cls);
+  // An "unassigned" student has no class and lives in the banner until assigned.
+  // It may or may not be Saturday-only (saturdayOnly controls the SAT badge).
+  const wantUnassigned = body.unassigned === true || (saturdayOnly && !cls);
 
   if (!GRADE_ORDER.includes(grade)) {
     return NextResponse.json({ error: 'Invalid grade.' }, { status: 400, headers: NO_STORE });
@@ -127,7 +127,7 @@ async function handleAdd(body: { grade?: unknown; cls?: unknown; name?: unknown;
     // Pool to dedupe / order against: the unassigned-Saturday list for the grade,
     // or the target class otherwise.
     const pool = wantUnassigned
-      ? Object.values(map).filter((r) => r.grade === grade && r.saturdayOnly && !r.cls)
+      ? Object.values(map).filter((r) => r.grade === grade && !r.cls)
       : Object.values(map).filter((r) => r.grade === grade && r.cls === cls);
 
     if (pool.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {

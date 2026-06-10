@@ -66,12 +66,12 @@ function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
   return out;
 }
 
-// Unassigned Saturday-only students for a grade (banner contents).
+// All unassigned students for a grade (banner contents) — Saturday-only and not.
 function bannerStudentsFor(map: RosterMap, grade: Grade): Student[] {
   return Object.entries(map)
-    .filter(([, r]) => r.grade === grade && r.saturdayOnly && !r.cls)
+    .filter(([, r]) => r.grade === grade && !r.cls)
     .sort((a, b) => a[1].order - b[1].order)
-    .map(([id, r]) => ({ id, name: r.name, note: r.note, sat: true }));
+    .map(([id, r]) => ({ id, name: r.name, note: r.note, sat: !!r.saturdayOnly }));
 }
 
 function SatBadge() {
@@ -301,8 +301,8 @@ export default function CheckinPage() {
     }
   }
 
-  // Create an unassigned Saturday-only student (lives in the banner).
-  async function addSaturdayStudent(grade: Grade, name: string, note = ''): Promise<'ok' | 'dup' | 'err'> {
+  // Create an unassigned student (lives in the banner). saturdayOnly toggles the SAT badge.
+  async function addUnassignedStudent(grade: Grade, name: string, note = '', saturdayOnly = false): Promise<'ok' | 'dup' | 'err'> {
     const trimmed = name.trim();
     if (!trimmed) return 'err';
     editBusyRef.current = true;
@@ -312,7 +312,7 @@ export default function CheckinPage() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         cache: 'no-store',
-        body: JSON.stringify({ op: 'add', grade, name: trimmed, note, saturdayOnly: true, unassigned: true }),
+        body: JSON.stringify({ op: 'add', grade, name: trimmed, note, saturdayOnly, unassigned: true }),
       });
       if (res.status === 409) return 'dup';
       if (!res.ok) return 'err';
@@ -536,7 +536,7 @@ export default function CheckinPage() {
           bannerCount={bannerCount}
           checked={checked}
           onAdd={addStudent}
-          onAddSaturday={addSaturdayStudent}
+          onAddUnassigned={addUnassignedStudent}
           onAssign={assignStudent}
           onRename={renameStudent}
           onRemove={removeStudent}
@@ -703,7 +703,7 @@ function SaturdayBanner({
   return (
     <div className="rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50/60 px-5 py-4">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-base font-bold text-amber-800">Unassigned · Saturday only</span>
+        <span className="text-base font-bold text-amber-800">Unassigned</span>
         <span className="text-sm font-semibold text-amber-700">{count.done} / {count.total}</span>
       </div>
       <div className="mt-3 space-y-1">
@@ -721,14 +721,14 @@ function SaturdayBanner({
               >
                 <CheckCircle done={done} />
                 <span className="text-sm text-slate-800">{s.name}</span>
-                <SatBadge />
+                {s.sat && <SatBadge />}
               </button>
             );
           }
           return (
             <div key={s.id} className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5">
               <span className="text-sm text-slate-800">{s.name}</span>
-              <SatBadge />
+              {s.sat && <SatBadge />}
               <select
                 value=""
                 onChange={(e) => { if (e.target.value) onAssign?.(s.id, e.target.value); }}
@@ -749,7 +749,8 @@ function SaturdayBanner({
 
 // ─── Edit view ──────────────────────────────────────────────────────────────
 
-const UNASSIGNED_VALUE = '__sat_unassigned__';
+const UNASSIGNED_SAT = '__unassigned_sat__';
+const UNASSIGNED_PLAIN = '__unassigned_plain__';
 
 function EditView({
   grade,
@@ -759,7 +760,7 @@ function EditView({
   bannerCount,
   checked,
   onAdd,
-  onAddSaturday,
+  onAddUnassigned,
   onAssign,
   onRename,
   onRemove,
@@ -771,7 +772,7 @@ function EditView({
   bannerCount: { done: number; total: number };
   checked: Record<string, boolean>;
   onAdd: (grade: Grade, cls: string, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
-  onAddSaturday: (grade: Grade, name: string, note?: string) => Promise<'ok' | 'dup' | 'err'>;
+  onAddUnassigned: (grade: Grade, name: string, note?: string, saturdayOnly?: boolean) => Promise<'ok' | 'dup' | 'err'>;
   onAssign: (id: string, cls: string) => Promise<'ok' | 'dup' | 'err'>;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
@@ -792,10 +793,16 @@ function EditView({
   async function submitQuickAdd() {
     const name = qaName.trim();
     if (!name) return;
-    const isUnassigned = qaClass === UNASSIGNED_VALUE;
-    const where = isUnassigned ? `${qaGrade} Saturday list` : qaClass;
+    const isSat = qaClass === UNASSIGNED_SAT;
+    const isPlain = qaClass === UNASSIGNED_PLAIN;
+    const isUnassigned = isSat || isPlain;
+    const where = isSat
+      ? `${qaGrade} Saturday list`
+      : isPlain
+        ? `${qaGrade} unassigned`
+        : qaClass;
     const result = isUnassigned
-      ? await onAddSaturday(qaGrade, name, qaNote.trim())
+      ? await onAddUnassigned(qaGrade, name, qaNote.trim(), isSat)
       : await onAdd(qaGrade, qaClass, name, qaNote.trim());
     if (result === 'dup') {
       setQaMsg({ type: 'warn', text: `"${name}" is already in ${where}.` });
@@ -846,7 +853,8 @@ function EditView({
             {(CLASS_ORDER[qaGrade] ?? []).map((cls) => (
               <option key={cls} value={cls}>{cls}</option>
             ))}
-            <option value={UNASSIGNED_VALUE}>Unassigned (Saturday only)</option>
+            <option value={UNASSIGNED_SAT}>Unassigned — Saturday only (SAT)</option>
+            <option value={UNASSIGNED_PLAIN}>Unassigned — no class</option>
           </select>
         </div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
