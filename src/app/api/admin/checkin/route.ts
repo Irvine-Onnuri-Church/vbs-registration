@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { registrationId, childIndex, checkedIn, proxyChildren, mode, pickupType } = await request.json();
+    const { registrationId, childIndex, checkedIn, proxyChildren, mode, pickupType, goodieBagDate } = await request.json();
     const effectiveMode: 'checkin' | 'goodiebag' = mode === 'goodiebag' ? 'goodiebag' : 'checkin';
 
     if (!registrationId || childIndex === undefined || checkedIn === undefined) {
@@ -34,13 +34,18 @@ export async function POST(request: Request) {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const goodiebagEventDates = ['2026-05-17', '2026-05-31'];
+    const goodiebagEventDates = ['2026-05-17', '2026-05-31', '2026-06-10'];
     const effectiveGoodieBagDate = (() => {
       const past = goodiebagEventDates.filter(d => d <= today);
       return past.length > 0 ? past[past.length - 1] : goodiebagEventDates[0];
     })();
+    // A specific pickup date may be targeted (per-date column toggle); otherwise
+    // fall back to the current effective date (Pick-up button / modal flow).
+    const targetGoodieBagDate = typeof goodieBagDate === 'string' && goodiebagEventDates.includes(goodieBagDate)
+      ? goodieBagDate
+      : effectiveGoodieBagDate;
     const sessionKey = effectiveMode === 'goodiebag'
-      ? `${effectiveGoodieBagDate}_goodiebag`
+      ? `${targetGoodieBagDate}_goodiebag`
       : `${today}_checkin`;
     const existingSessions: Record<string, unknown> = { ...(children[childIndex].sessions || {}) };
 
@@ -53,6 +58,9 @@ export async function POST(request: Request) {
           ...(pickupType ? { pickup_type: pickupType } : {}),
           ...(Array.isArray(proxyChildren) && proxyChildren.length ? { alternate_children: proxyChildren } : {}),
         };
+      } else if (typeof goodieBagDate === 'string' && goodiebagEventDates.includes(goodieBagDate)) {
+        // Per-date cancel: clear only the targeted date.
+        existingSessions[sessionKey] = null;
       } else {
         // Cancel: null out every goodiebag session key (covers historical dates)
         for (const key of Object.keys(existingSessions)) {

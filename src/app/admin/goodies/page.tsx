@@ -90,7 +90,7 @@ function formatPhone(phone: string): string {
   return phone ?? '';
 }
 
-const GOODIEBAG_EVENT_DATES = ['2026-05-17', '2026-05-31'];
+const GOODIEBAG_EVENT_DATES = ['2026-05-17', '2026-05-31', '2026-06-10'];
 
 function effectiveGoodieBagDate(): string {
   const today = new Date().toISOString().slice(0, 10);
@@ -103,6 +103,7 @@ function downloadGoodieBagCSV(rows: FlatRow[]) {
   const headers = [
     'Child Name', 'Parent Name', 'Grade', 'Class', 'T-Shirt Size',
     'DOB', 'Gender', 'Mobile', 'Allergies/Medical',
+    ...GOODIEBAG_EVENT_DATES.map((d) => `Goodie Bag ${formatDateCol(d)}`),
     'Goodie Bag Picked Up',
   ];
   const csvRows = rows.map(({ reg, child }) => [
@@ -115,6 +116,7 @@ function downloadGoodieBagCSV(rows: FlatRow[]) {
     child.gender === 'Male' ? 'M' : child.gender === 'Female' ? 'F' : (child.gender ?? ''),
     formatPhone(reg.phone_number),
     child.allergy_information ?? '',
+    ...GOODIEBAG_EVENT_DATES.map((d) => (child.sessions?.[`${d}_goodiebag`]?.status === 'picked_up' ? 'Yes' : 'No')),
     Object.values(child.sessions ?? {}).some((s) => s?.status === 'picked_up') ? 'Yes' : 'No',
   ]);
   const csv = [headers, ...csvRows].map((row) => row.map(escape).join(',')).join('\n');
@@ -252,6 +254,7 @@ export default function CheckInPage() {
     currentlyPickedUp: boolean,
     proxyChildren?: { name: string; grade: string }[],
     pickupType?: 'parent' | 'alternate',
+    goodieBagDate?: string,
   ) {
     const key = `${regId}-${childIndex}`;
     setLoadingCheckin(key);
@@ -266,11 +269,12 @@ export default function CheckInPage() {
         mode: 'goodiebag',
         ...(proxyChildren?.length ? { proxyChildren } : {}),
         ...(pickupType ? { pickupType } : {}),
+        ...(goodieBagDate ? { goodieBagDate } : {}),
       }),
     });
 
     if (res.ok) {
-      const sessionKey = `${effectiveGoodieBagDate()}_goodiebag`;
+      const sessionKey = `${goodieBagDate ?? effectiveGoodieBagDate()}_goodiebag`;
       setRegistrations((prev) =>
         prev.map((reg) => {
           if (reg.id !== regId) return reg;
@@ -280,16 +284,26 @@ export default function CheckInPage() {
               if (i !== childIndex) return child;
               let updatedSessions: Record<string, Session | null>;
               if (currentlyPickedUp) {
-                // Cancel: null out all goodiebag sessions (covers historical dates)
-                updatedSessions = Object.fromEntries(
-                  Object.entries(child.sessions ?? {}).map(([k, v]) =>
-                    k.endsWith('_goodiebag') ? [k, null] : [k, v]
-                  )
-                );
+                if (goodieBagDate) {
+                  // Per-date cancel: clear only the targeted date.
+                  updatedSessions = { ...(child.sessions ?? {}), [sessionKey]: null };
+                } else {
+                  // Cancel: null out all goodiebag sessions (covers historical dates)
+                  updatedSessions = Object.fromEntries(
+                    Object.entries(child.sessions ?? {}).map(([k, v]) =>
+                      k.endsWith('_goodiebag') ? [k, null] : [k, v]
+                    )
+                  );
+                }
               } else {
                 updatedSessions = {
                   ...(child.sessions ?? {}),
-                  [sessionKey]: { status: 'picked_up', by: null, at: new Date().toISOString() },
+                  [sessionKey]: {
+                    status: 'picked_up',
+                    by: null,
+                    at: new Date().toISOString(),
+                    ...(pickupType ? { pickup_type: pickupType } : {}),
+                  },
                 };
               }
               return { ...child, sessions: updatedSessions };
@@ -612,8 +626,8 @@ export default function CheckInPage() {
                       colSpan={goodieBagDates.length}
                       className="py-2 px-1.5 pb-1 pt-2 text-center text-xs font-bold uppercase tracking-wider text-amber-600"
                     >
-                      <div className="flex justify-center">
-                        <span className="inline-flex items-center gap-1 border-b border-amber-200 pb-0.5">
+                      <div className="flex justify-center border-b border-amber-200 pb-0.5">
+                        <span className="inline-flex items-center gap-1">
                           <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <path d="M20 12v10H4V12" /><path d="M22 7H2v5h20V7z" /><path d="M12 22V7" />
                             <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
@@ -696,18 +710,26 @@ export default function CheckInPage() {
                         const isAlt = s?.pickup_type === 'alternate';
                         return (
                           <td key={`gb-${date}`} className="py-1 px-1.5 text-center">
-                            {s ? (
-                              <span className="inline-flex flex-col items-center gap-0.5">
-                                <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
-                                  <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
+                            <button
+                              type="button"
+                              onClick={() => toggleGoodieBag(reg.id, childIndex, !!s, undefined, s ? undefined : 'parent', date)}
+                              disabled={loadingCheckin === `${reg.id}-${childIndex}`}
+                              title={s ? 'Tap to undo pickup' : 'Tap to mark picked up'}
+                              className="inline-flex items-center justify-center rounded-lg p-1 transition hover:bg-slate-100 disabled:opacity-50"
+                            >
+                              {s ? (
+                                <span className="inline-flex flex-col items-center gap-0.5">
+                                  <span className="inline-flex items-center justify-center rounded-full bg-amber-100 p-1">
+                                    <svg className="h-3 w-3 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </span>
+                                  {isAlt && <span className="text-[9px] font-medium text-amber-600">Alt</span>}
                                 </span>
-                                {isAlt && <span className="text-[9px] font-medium text-amber-600">Alt</span>}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300">—</span>
-                            )}
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </button>
                           </td>
                         );
                       })}
