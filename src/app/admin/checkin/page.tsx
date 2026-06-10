@@ -442,7 +442,8 @@ function StudentRow({ name, done, onToggle }: { name: string; done: boolean; onT
       <button
         onClick={onToggle}
         aria-pressed={done}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50"
+        className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${done ? '' : 'hover:bg-slate-50'}`}
+        style={done ? { backgroundColor: 'rgba(29, 158, 117, 0.5)' } : undefined}
       >
         {done ? (
           <span
@@ -456,7 +457,7 @@ function StudentRow({ name, done, onToggle }: { name: string; done: boolean; onT
         ) : (
           <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300" />
         )}
-        <span className={`text-sm ${done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{name}</span>
+        <span className="text-sm text-slate-800">{name}</span>
       </button>
     </li>
   );
