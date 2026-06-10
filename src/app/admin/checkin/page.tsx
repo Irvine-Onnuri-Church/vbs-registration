@@ -198,6 +198,9 @@ export default function CheckinPage() {
     }
     setAuthenticated(true);
     setAuthLoading(false);
+    // Notify the Navbar so it re-checks auth and swaps to the admin links
+    // immediately (otherwise it stays on the public links until a refresh).
+    window.dispatchEvent(new Event('admin-auth-changed'));
   }
 
   async function toggle(key: string) {
