@@ -86,6 +86,7 @@ export type StudentRecord = {
   note: string;
   saturdayOnly?: boolean;
   gender?: Gender;
+  crossedOut?: boolean; // withdrawn — shown with a strikethrough
 };
 export type RosterMap = Record<string, StudentRecord>;
 

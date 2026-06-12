@@ -40,17 +40,17 @@ function textColorFor(hex: string): string {
 
 // ─── Derived view model ─────────────────────────────────────────────────────
 
-type Student = { id: string; name: string; note: string; sat: boolean };
+type Student = { id: string; name: string; note: string; sat: boolean; crossed: boolean };
 type GroupedClass = { className: string; left: Student[]; right: Student[] };
 
 // Group the flat roster map into ordered classes/columns for rendering.
 // Unassigned Saturday students (cls === '') are skipped here — they render in the
 // banner, not in class cards.
 function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
-  const byGradeClass: Record<string, Record<string, Array<{ id: string; col: 'L' | 'R'; order: number; name: string; note: string; sat: boolean }>>> = {};
+  const byGradeClass: Record<string, Record<string, Array<{ id: string; col: 'L' | 'R'; order: number; name: string; note: string; sat: boolean; crossed: boolean }>>> = {};
   for (const [id, r] of Object.entries(map)) {
     if (!r.cls) continue;
-    ((byGradeClass[r.grade] ??= {})[r.cls] ??= []).push({ id, col: r.col, order: r.order, name: r.name, note: r.note, sat: !!r.saturdayOnly });
+    ((byGradeClass[r.grade] ??= {})[r.cls] ??= []).push({ id, col: r.col, order: r.order, name: r.name, note: r.note, sat: !!r.saturdayOnly, crossed: !!r.crossedOut });
   }
 
   const out: Record<string, GroupedClass[]> = {};
@@ -58,7 +58,7 @@ function groupRoster(map: RosterMap): Record<string, GroupedClass[]> {
     const classList = CLASS_ORDER[grade] ?? [];
     out[grade] = classList.map((cls) => {
       const arr = byGradeClass[grade]?.[cls] ?? [];
-      const toStudent = (s: { id: string; name: string; note: string; sat: boolean }): Student => ({ id: s.id, name: s.name, note: s.note, sat: s.sat });
+      const toStudent = (s: { id: string; name: string; note: string; sat: boolean; crossed: boolean }): Student => ({ id: s.id, name: s.name, note: s.note, sat: s.sat, crossed: s.crossed });
       const left = arr.filter((s) => s.col === 'L').sort((a, b) => a.order - b.order).map(toStudent);
       const right = arr.filter((s) => s.col === 'R').sort((a, b) => a.order - b.order).map(toStudent);
       return { className: cls, left, right };
@@ -72,7 +72,7 @@ function bannerStudentsFor(map: RosterMap, grade: Grade): Student[] {
   return Object.entries(map)
     .filter(([, r]) => r.grade === grade && !r.cls)
     .sort((a, b) => a[1].order - b[1].order)
-    .map(([id, r]) => ({ id, name: r.name, note: r.note, sat: !!r.saturdayOnly }));
+    .map(([id, r]) => ({ id, name: r.name, note: r.note, sat: !!r.saturdayOnly, crossed: !!r.crossedOut }));
 }
 
 function SatBadge() {
@@ -675,7 +675,7 @@ function StudentRow({ student, done, onToggle }: { student: Student; done: boole
         <CheckCircle done={done} />
         <span className="min-w-0">
           <span className="flex items-center gap-1.5">
-            <span className="text-sm text-slate-800">{student.name}</span>
+            <span className={`text-sm ${student.crossed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{student.name}</span>
             {student.sat && <SatBadge />}
           </span>
           {student.note && <span className="block text-xs text-amber-600">{student.note}</span>}
